@@ -1,0 +1,242 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Project;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+
+class ProjectService
+{
+    /**
+     * Generate a unique order number (e.g. ORD-000001).
+     */
+    public function generateOrderNumber(): string
+    {
+        $prefix = config('manufacturing.order_no_prefix', 'ORD-');
+        $padding = config('manufacturing.order_no_padding', 6);
+
+        $lastProject = Project::withTrashed()
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $nextNumber = $lastProject ? $lastProject->id + 1 : 1;
+
+        return $prefix . str_pad((string) $nextNumber, $padding, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Check if a project can transition to a new status.
+     */
+    public function canTransitionTo(Project $project, string $newStatus): bool
+    {
+        $currentStatus = $project->status;
+        $statuses = config('manufacturing.project_statuses', []);
+
+        if (!isset($statuses[$currentStatus])) {
+            return false;
+        }
+
+        $allowedNext = $statuses[$currentStatus]['next'] ?? [];
+
+        return in_array($newStatus, $allowedNext);
+    }
+
+    /**
+     * Transition a project to a new status after validation.
+     *
+     * @throws \InvalidArgumentException
+     */
+    public function transitionStatus(Project $project, string $newStatus): Project
+    {
+        if (!$this->canTransitionTo($project, $newStatus)) {
+            throw new \InvalidArgumentException(
+                "Cannot transition project from '{$project->status}' to '{$newStatus}'."
+            );
+        }
+
+        $project->update(['status' => $newStatus]);
+
+        return $project->fresh();
+    }
+
+    /**
+     * Create a project with related products, teams, and members.
+     */
+    public function createProject(array $data): Project
+    {
+        $data['order_no'] = $this->generateOrderNumber();
+        $data['slug'] = Str::slug($data['name']);
+        $data['project_manager_id'] = $data['project_manager_id'] ?? auth()->id();
+
+        $project = Project::create($data);
+
+        // Sync products with pivot data
+        if (!empty($data['products'])) {
+            $productSync = [];
+            foreach ($data['products'] as $product) {
+                if (!empty($product['product_id'])) {
+                    $productSync[$product['product_id']] = [
+                        'quantity' => $product['quantity'] ?? 1,
+                        'unit_price_at_time' => $product['unit_price_at_time'] ?? null,
+                        'notes' => $product['notes'] ?? null,
+                    ];
+                }
+            }
+            $project->products()->sync($productSync);
+        }
+
+        // Sync teams
+        if (!empty($data['team_ids'])) {
+            $teamSync = [];
+            foreach ($data['team_ids'] as $teamId) {
+                $teamSync[$teamId] = ['assigned_at' => now()];
+            }
+            $project->teams()->sync($teamSync);
+        }
+
+        // Sync members
+        if (!empty($data['members'])) {
+            $memberSync = [];
+            foreach ($data['members'] as $memberId) {
+                $memberSync[$memberId] = ['assigned_at' => now()];
+            }
+            $project->members()->sync($memberSync);
+        }
+
+        // Handle attachments
+        if (!empty($data['attachments'])) {
+            foreach ($data['attachments'] as $file) {
+                $path = $file->store('project-attachments', 'private');
+
+                $project->attachments()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'disk' => 'private',
+                    'uploaded_by' => auth()->id(),
+                ]);
+            }
+        }
+
+        return $project->load(['client', 'projectManager', 'products', 'teams', 'members']);
+    }
+
+    /**
+     * Update a project and sync its relations.
+     */
+    public function updateProject(Project $project, array $data): Project
+    {
+        if (isset($data['name'])) {
+            $data['slug'] = Str::slug($data['name']);
+        }
+
+        $project->update($data);
+
+        // Sync products with pivot data
+        if (array_key_exists('products', $data)) {
+            $productSync = [];
+            foreach ($data['products'] ?? [] as $product) {
+                if (!empty($product['product_id'])) {
+                    $productSync[$product['product_id']] = [
+                        'quantity' => $product['quantity'] ?? 1,
+                        'unit_price_at_time' => $product['unit_price_at_time'] ?? null,
+                        'notes' => $product['notes'] ?? null,
+                    ];
+                }
+            }
+            $project->products()->sync($productSync);
+        }
+
+        // Sync teams
+        if (array_key_exists('team_ids', $data)) {
+            $teamSync = [];
+            foreach ($data['team_ids'] ?? [] as $teamId) {
+                $teamSync[$teamId] = ['assigned_at' => now()];
+            }
+            $project->teams()->sync($teamSync);
+        }
+
+        // Sync members
+        if (array_key_exists('members', $data)) {
+            $memberSync = [];
+            foreach ($data['members'] ?? [] as $memberId) {
+                $memberSync[$memberId] = ['assigned_at' => now()];
+            }
+            $project->members()->sync($memberSync);
+        }
+
+        // Delete attachments
+        if (!empty($data['delete_attachments'])) {
+            foreach ($data['delete_attachments'] as $attachmentId) {
+                $attachment = $project->attachments()->find($attachmentId);
+                if ($attachment) {
+                    // Delete file from storage
+                    Storage::disk($attachment->disk ?? 'private')->delete($attachment->file_path);
+                    // Delete database record
+                    $attachment->delete();
+                }
+            }
+        }
+
+        // Handle new attachments
+        if (!empty($data['attachments'])) {
+            foreach ($data['attachments'] as $file) {
+                $path = $file->store('project-attachments', 'private');
+
+                $project->attachments()->create([
+                    'file_name' => $file->getClientOriginalName(),
+                    'file_path' => $path,
+                    'file_size' => $file->getSize(),
+                    'mime_type' => $file->getMimeType(),
+                    'disk' => 'private',
+                    'uploaded_by' => auth()->id(),
+                ]);
+            }
+        }
+
+        return $project->fresh(['client', 'projectManager', 'products', 'teams', 'members']);
+    }
+
+    /**
+     * Check if a project should be marked as delayed based on delivery date.
+     */
+    public function checkAndMarkDelayed(Project $project): bool
+    {
+        // Only check projects that are in confirmed or in_production status
+        if (!in_array($project->status, ['confirmed', 'in_production'])) {
+            return false;
+        }
+
+        // Check if delivery date exists and has passed
+        if ($project->delivery_date && $project->delivery_date->isPast()) {
+            $project->update(['status' => 'delayed']);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check all active projects and mark delayed ones.
+     */
+    public function checkAllDelayedProjects(): int
+    {
+        $count = 0;
+        $today = Carbon::today();
+
+        $projects = Project::whereIn('status', ['confirmed', 'in_production'])
+            ->whereNotNull('delivery_date')
+            ->where('delivery_date', '<', $today)
+            ->get();
+
+        foreach ($projects as $project) {
+            $project->update(['status' => 'delayed']);
+            $count++;
+        }
+
+        return $count;
+    }
+}
