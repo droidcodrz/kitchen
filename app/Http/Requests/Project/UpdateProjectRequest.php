@@ -52,7 +52,7 @@ class UpdateProjectRequest extends FormRequest
             'members' => ['nullable', 'array'],
             'members.*' => ['exists:users,id'],
             'delete_attachments' => ['nullable', 'array'],
-            'delete_attachments.*' => ['exists:project_attachments,id'],
+            'delete_attachments.*' => ['exists:attachments,id'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:10240', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx'], // 10MB max per file
         ];
