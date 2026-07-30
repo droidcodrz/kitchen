@@ -180,7 +180,7 @@
             @endif
 
             {{-- New Attachments --}}
-            <div>
+            <div x-data="{ selectedFiles: [] }">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Add Attachments</h3>
                 <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 dark:border-gray-600 border-dashed rounded-lg">
                     <div class="space-y-1 text-center">
@@ -190,13 +190,23 @@
                         <div class="flex text-sm text-gray-600 dark:text-gray-400">
                             <label for="attachments" class="relative cursor-pointer rounded-md font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500">
                                 <span>Upload files</span>
-                                <input id="attachments" name="attachments[]" type="file" class="sr-only" multiple />
+                                <input id="attachments" name="attachments[]" type="file" class="sr-only" multiple @change="selectedFiles = Array.from($event.target.files)" />
                             </label>
                             <p class="pl-1">or drag and drop</p>
                         </div>
                         <p class="text-xs text-gray-500 dark:text-gray-400">PDF, PNG, JPG, DWG up to 10MB each</p>
                     </div>
                 </div>
+                <template x-if="selectedFiles.length > 0">
+                    <ul class="mt-3 space-y-1">
+                        <template x-for="file in selectedFiles" :key="file.name + file.size">
+                            <li class="flex items-center text-sm text-gray-700 dark:text-gray-300">
+                                <svg class="w-4 h-4 mr-2 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+                                <span x-text="file.name" class="truncate"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </template>
                 <x-input-error :messages="$errors->get('attachments')" class="mt-2" />
             </div>
 
