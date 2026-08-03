@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AlertConfigurationController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\CustomFieldDefinitionController;
 use App\Http\Controllers\Admin\DropdownOptionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StorageLocationController;
@@ -162,6 +163,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         // Storage Locations
         Route::resource('storage-locations', StorageLocationController::class);
+
+        // Custom Field Definitions
+        Route::resource('custom-field-definitions', CustomFieldDefinitionController::class);
 
         // Dropdown Options
         Route::get('dropdown-options', [DropdownOptionController::class, 'index'])->name('dropdown-options.index');
