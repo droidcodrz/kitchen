@@ -36,8 +36,9 @@ class InventoryItemController extends Controller
         $vendors = Vendor::where('is_active', true)->get();
         $storageLocations = StorageLocation::where('is_active', true)->get();
         $dropdownOptions = $this->getDropdownOptions();
+        $itemTypes = InventoryItem::ITEM_TYPES;
 
-        return view('inventory.index', compact('items', 'vendors', 'storageLocations', 'dropdownOptions'));
+        return view('inventory.index', compact('items', 'vendors', 'storageLocations', 'dropdownOptions', 'itemTypes'));
     }
 
     /**
@@ -48,8 +49,9 @@ class InventoryItemController extends Controller
         $vendors = Vendor::where('is_active', true)->get();
         $storageLocations = StorageLocation::where('is_active', true)->get();
         $dropdownOptions = $this->getDropdownOptions();
+        $itemTypes = InventoryItem::ITEM_TYPES;
 
-        return view('inventory.create', compact('vendors', 'storageLocations', 'dropdownOptions'));
+        return view('inventory.create', compact('vendors', 'storageLocations', 'dropdownOptions', 'itemTypes'));
     }
 
     /**
@@ -138,8 +140,9 @@ class InventoryItemController extends Controller
         $vendors = Vendor::where('is_active', true)->get();
         $storageLocations = StorageLocation::where('is_active', true)->get();
         $dropdownOptions = $this->getDropdownOptions();
+        $itemTypes = InventoryItem::ITEM_TYPES;
 
-        return view('inventory.edit', compact('inventoryItem', 'vendors', 'storageLocations', 'dropdownOptions'));
+        return view('inventory.edit', compact('inventoryItem', 'vendors', 'storageLocations', 'dropdownOptions', 'itemTypes'));
     }
 
     /**

@@ -14,6 +14,18 @@ class InventoryItem extends Model
     use HasFactory, SoftDeletes;
 
     /**
+     * The allowed values for the item_type column (matches the DB enum).
+     *
+     * @var array<string, string>
+     */
+    public const ITEM_TYPES = [
+        'raw_material' => 'Raw Material',
+        'consumable' => 'Consumable',
+        'part' => 'Part',
+        'finished_good' => 'Finished Good',
+    ];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
