@@ -57,6 +57,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Projects
+    Route::get('projects/check-name', [ProjectController::class, 'checkName'])
+        ->name('projects.check-name');
     Route::resource('projects', ProjectController::class);
     Route::patch('projects/{project}/status', [ProjectController::class, 'updateStatus'])
         ->name('projects.update-status');

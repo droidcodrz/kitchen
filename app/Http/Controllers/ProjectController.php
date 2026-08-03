@@ -66,6 +66,16 @@ class ProjectController extends Controller
     }
 
     /**
+     * Check whether a project name is already taken (used for live validation).
+     */
+    public function checkName(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $exists = Project::where('name', $request->query('name'))->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
+    /**
      * Store a newly created project.
      */
     public function store(StoreProjectRequest $request): RedirectResponse
