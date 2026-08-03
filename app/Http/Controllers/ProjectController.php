@@ -147,6 +147,13 @@ class ProjectController extends Controller
      */
     public function destroy(Project $project): RedirectResponse
     {
+        // Release any reserved materials before deleting -- only if they were
+        // reserved but not yet consumed (materials already deducted for
+        // in-production/finished/delivered projects should not be added back).
+        if ($project->status === 'confirmed') {
+            app(\App\Services\InventoryService::class)->releaseForProject($project);
+        }
+
         $project->delete();
 
         return redirect()->route('projects.index')

@@ -133,6 +133,78 @@ class InventoryService
     }
 
     /**
+     * Consume (deduct) reserved materials for a project once production starts.
+     * Converts a prior reservation into an actual stock deduction.
+     *
+     * @throws \InvalidArgumentException if any required material has insufficient stock
+     */
+    public function consumeForProject(Project $project): void
+    {
+        DB::transaction(function () use ($project) {
+            $project->load('products.requiredMaterials');
+
+            // Aggregate total required quantity per material across all products on the project
+            $required = [];
+            foreach ($project->products as $product) {
+                $projectQuantity = $product->pivot->quantity ?? 1;
+
+                foreach ($product->requiredMaterials as $material) {
+                    $requiredQty = ($material->pivot->quantity_required ?? 0) * $projectQuantity;
+
+                    if ($requiredQty > 0) {
+                        $required[$material->id] = ($required[$material->id] ?? 0) + $requiredQty;
+                    }
+                }
+            }
+
+            if (empty($required)) {
+                return;
+            }
+
+            $materials = InventoryItem::whereIn('id', array_keys($required))->get()->keyBy('id');
+
+            // Validate stock is sufficient for every material before deducting any of them
+            foreach ($required as $materialId => $qty) {
+                $material = $materials->get($materialId);
+
+                if (!$material || $material->stock_quantity < $qty) {
+                    $available = $material->stock_quantity ?? 0;
+                    $name = $material->name ?? "material #{$materialId}";
+
+                    throw new \InvalidArgumentException(
+                        "Cannot start production: insufficient stock for {$name}. Available: {$available}, needed: {$qty}."
+                    );
+                }
+            }
+
+            foreach ($required as $materialId => $qty) {
+                $material = $materials->get($materialId);
+
+                $material->decrement('stock_quantity', $qty);
+                $material->update([
+                    'reserved_quantity' => max(0, $material->reserved_quantity - $qty),
+                ]);
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $materialId,
+                    'type' => 'deduction',
+                    'quantity' => $qty,
+                    'reference_type' => Project::class,
+                    'reference_id' => $project->id,
+                    'notes' => "Consumed for project: {$project->name}",
+                    'performed_by' => Auth::id(),
+                ]);
+
+                // Check for low stock after consumption
+                $material->refresh();
+                if ($material->is_low_stock) {
+                    $this->notifyLowStock($material);
+                }
+            }
+        });
+    }
+
+    /**
      * Get all inventory items that are below their minimum stock level.
      */
     public function getLowStockItems(): Collection

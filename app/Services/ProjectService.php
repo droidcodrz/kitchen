@@ -9,6 +9,10 @@ use Illuminate\Support\Str;
 
 class ProjectService
 {
+    public function __construct(
+        protected InventoryService $inventoryService
+    ) {}
+
     /**
      * Generate a unique order number (e.g. ORD-000001).
      */
@@ -54,6 +58,17 @@ class ProjectService
             throw new \InvalidArgumentException(
                 "Cannot transition project from '{$project->status}' to '{$newStatus}'."
             );
+        }
+
+        // Reserve required materials once the order is confirmed
+        if ($newStatus === 'confirmed') {
+            $this->inventoryService->reserveForProject($project);
+        }
+
+        // Deduct (consume) reserved materials once production actually starts.
+        // Throws if stock is insufficient, which blocks the status change.
+        if ($newStatus === 'in_production') {
+            $this->inventoryService->consumeForProject($project);
         }
 
         $project->update(['status' => $newStatus]);
@@ -119,6 +134,11 @@ class ProjectService
                     'uploaded_by' => auth()->id(),
                 ]);
             }
+        }
+
+        // If the project was created already confirmed, reserve its materials immediately
+        if ($project->status === 'confirmed') {
+            $this->inventoryService->reserveForProject($project);
         }
 
         return $project->load(['client', 'projectManager', 'products', 'teams', 'members']);
