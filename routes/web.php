@@ -86,6 +86,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('product-folders.move-product');
 
     // Inventory
+    Route::get('inventory/custom-fields/get', [InventoryItemController::class, 'getCustomFields'])
+        ->name('inventory.custom-fields.get');
     Route::resource('inventory', InventoryItemController::class)
         ->parameters(['inventory' => 'inventory_item']);
     Route::post('inventory/{inventory_item}/adjust-stock', [InventoryItemController::class, 'adjustStock'])

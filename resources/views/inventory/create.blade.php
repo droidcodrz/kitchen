@@ -124,7 +124,7 @@
 
                 <div>
                     <x-input-label for="item_type" :value="__('System Category')" />
-                    <select id="item_type" name="item_type" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                    <select id="item_type" name="item_type" x-model="itemType" @change="loadCustomFields()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                         <option value="">Select Category</option>
                         @foreach($dropdownOptions['system_categories'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('item_type') === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
@@ -216,6 +216,51 @@
                 </div>
             </div>
 
+            {{-- Custom Fields Section --}}
+            <div x-show="customFields.length > 0" x-transition class="p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">Additional Fields</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <template x-for="field in customFields" :key="field.id">
+                        <div>
+                            <label :for="'custom_field_' + field.id" class="block text-sm font-medium text-gray-700 dark:text-gray-300" x-text="field.field_label + (field.is_required ? ' *' : '')"></label>
+
+                            <template x-if="field.field_type === 'text'">
+                                <input type="text" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                            </template>
+
+                            <template x-if="field.field_type === 'number'">
+                                <input type="number" step="0.01" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                            </template>
+
+                            <template x-if="field.field_type === 'date'">
+                                <input type="date" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                            </template>
+
+                            <template x-if="field.field_type === 'select'">
+                                <select :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="">Select...</option>
+                                    <template x-for="option in field.options" :key="option">
+                                        <option :value="option" x-text="option"></option>
+                                    </template>
+                                </select>
+                            </template>
+
+                            <template x-if="field.field_type === 'boolean'">
+                                <select :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                    <option value="">-</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </template>
+
+                            <template x-if="field.field_type === 'textarea'">
+                                <textarea :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" rows="3" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"></textarea>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
             {{-- Actions --}}
             <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <a href="{{ route('inventory.index') }}" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">
@@ -241,6 +286,7 @@
 
         return {
             itemTypeLabel: '{{ old('item_type_label', '') }}',
+            itemType: '{{ old('item_type', '') }}',
             materialType: '{{ old('material_type', '') }}',
             materialGrade: '{{ old('material_grade', '') }}',
             thicknessGauge: '{{ old('thickness_gauge', '') }}',
@@ -248,8 +294,30 @@
             dimension: '{{ old('dimension', '') }}',
             generatedLabel: '',
             generatedDescription: '',
+            customFields: [],
 
-            init() { this.updatePreview(); },
+            init() {
+                this.updatePreview();
+                if (this.itemType) {
+                    this.loadCustomFields();
+                }
+            },
+
+            async loadCustomFields() {
+                if (!this.itemType) {
+                    this.customFields = [];
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`{{ route('inventory.custom-fields.get') }}?item_type=${encodeURIComponent(this.itemType)}`);
+                    const data = await response.json();
+                    this.customFields = data.fields || [];
+                } catch (error) {
+                    console.error('Error loading custom fields:', error);
+                    this.customFields = [];
+                }
+            },
 
             updatePreview() {
                 let label = '';
