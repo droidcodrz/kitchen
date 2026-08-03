@@ -27,7 +27,7 @@
 
                 {{-- Notification Bell Dropdown --}}
                 @php
-                    $unreadCount = Auth::user()?->unreadNotifications?->count() ?? 0;
+                    $unreadCount = Auth::user()?->unreadNotifications()->count() ?? 0;
                     $recentNotifications = Auth::user()?->notifications()->latest()->take(5)->get() ?? collect();
                 @endphp
                 <x-dropdown align="right" width="notification">

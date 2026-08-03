@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
 class DropdownOption extends Model
 {
@@ -38,13 +39,21 @@ class DropdownOption extends Model
         self::TYPE_SYSTEM_CATEGORY => 'System Category',
     ];
 
+    protected static function booted(): void
+    {
+        static::saved(fn (self $option) => Cache::forget("dropdown_options:{$option->type}"));
+        static::deleted(fn (self $option) => Cache::forget("dropdown_options:{$option->type}"));
+    }
+
     public static function getOptions(string $type): \Illuminate\Database\Eloquent\Collection
     {
-        return static::where('type', $type)
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->orderBy('label')
-            ->get();
+        return Cache::remember("dropdown_options:{$type}", 3600, function () use ($type) {
+            return static::where('type', $type)
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->orderBy('label')
+                ->get();
+        });
     }
 
     public static function getOptionsForSelect(string $type): array

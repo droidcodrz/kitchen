@@ -224,19 +224,9 @@ class ProjectService
      */
     public function checkAllDelayedProjects(): int
     {
-        $count = 0;
-        $today = Carbon::today();
-
-        $projects = Project::whereIn('status', ['confirmed', 'in_production'])
+        return Project::whereIn('status', ['confirmed', 'in_production'])
             ->whereNotNull('delivery_date')
-            ->where('delivery_date', '<', $today)
-            ->get();
-
-        foreach ($projects as $project) {
-            $project->update(['status' => 'delayed']);
-            $count++;
-        }
-
-        return $count;
+            ->where('delivery_date', '<', Carbon::today())
+            ->update(['status' => 'delayed']);
     }
 }

@@ -36,7 +36,7 @@ class ProjectController extends Controller
         $view = session('projects_view', 'grid');
         $perPage = $view === 'table' ? 25 : 15;
 
-        $query = Project::with(['client', 'projectManager', 'teams', 'products', 'members']);
+        $query = Project::with(['client', 'projectManager', 'teams', 'products', 'members', 'attachments']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
