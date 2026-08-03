@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Team\StoreTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -22,7 +23,9 @@ class TeamController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('teams.index', compact('teams'));
+        $roles = Role::all();
+
+        return view('teams.index', compact('teams', 'roles'));
     }
 
     /**

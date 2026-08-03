@@ -42,8 +42,14 @@ class UserController extends Controller
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
+        $teamId = $data['team_id'] ?? null;
+        unset($data['team_id']);
 
-        User::create($data);
+        $user = User::create($data);
+
+        if ($teamId) {
+            $user->teams()->attach($teamId, ['joined_at' => now()]);
+        }
 
         return redirect()->route('admin.users.index')
             ->with('success', 'User created successfully.');

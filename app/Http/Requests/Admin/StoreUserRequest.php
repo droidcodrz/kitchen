@@ -39,6 +39,7 @@ class StoreUserRequest extends FormRequest
             'password' => ['required', 'min:8', 'confirmed'],
             'phone_number' => ['nullable', 'max:20'],
             'role_id' => ['required', 'exists:roles,id'],
+            'team_id' => ['nullable', 'exists:teams,id'],
         ];
     }
 }
