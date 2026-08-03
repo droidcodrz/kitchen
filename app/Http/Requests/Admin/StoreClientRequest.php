@@ -36,7 +36,7 @@ class StoreClientRequest extends FormRequest
             'name' => ['required', 'max:191'],
             'contact_person' => ['nullable', 'max:191'],
             'email' => ['nullable', 'email'],
-            'phone' => ['nullable', 'max:50'],
+            'phone' => ['nullable', 'regex:/^(\+91[\-\s]?)?[6-9]\d{9}$/'],
         ];
     }
 }

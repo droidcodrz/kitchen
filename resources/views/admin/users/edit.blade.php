@@ -37,7 +37,7 @@
 
                     <div>
                         <x-input-label for="phone_number" :value="__('Phone')" />
-                        <x-text-input id="phone_number" name="phone_number" type="text" class="mt-1 block w-full" :value="old('phone_number', $user->phone_number)" />
+                        <x-text-input id="phone_number" name="phone_number" type="tel" pattern="^(\+91[\-\s]?)?[6-9]\d{9}$" maxlength="13" placeholder="9876543210" class="mt-1 block w-full" :value="old('phone_number', $user->phone_number)" />
                         <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
                     </div>
 

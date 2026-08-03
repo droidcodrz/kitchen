@@ -39,7 +39,7 @@ class UpdateUserRequest extends FormRequest
             'last_name' => ['nullable', 'max:191'],
             'email' => ['required', 'email', 'unique:users,email,' . $userId],
             'password' => ['nullable', 'min:8', 'confirmed'],
-            'phone_number' => ['nullable', 'max:20'],
+            'phone_number' => ['nullable', 'regex:/^(\+91[\-\s]?)?[6-9]\d{9}$/'],
             'role_id' => ['required', 'exists:roles,id'],
         ];
     }
