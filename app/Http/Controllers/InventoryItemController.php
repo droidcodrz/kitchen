@@ -87,7 +87,7 @@ class InventoryItemController extends Controller
         if ($data['stock_quantity'] > 0) {
             InventoryTransaction::create([
                 'inventory_item_id' => $inventoryItem->id,
-                'type' => 'in',
+                'type' => 'addition',
                 'quantity' => $data['stock_quantity'],
                 'notes' => 'Initial stock entry',
                 'performed_by' => auth()->id(),
@@ -160,7 +160,7 @@ class InventoryItemController extends Controller
             $difference = $newStockQuantity - $oldStockQuantity;
             InventoryTransaction::create([
                 'inventory_item_id' => $inventoryItem->id,
-                'type' => $difference > 0 ? 'in' : 'out',
+                'type' => $difference > 0 ? 'addition' : 'deduction',
                 'quantity' => abs($difference),
                 'notes' => 'Stock adjusted via edit form',
                 'performed_by' => auth()->id(),

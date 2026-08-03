@@ -159,13 +159,16 @@
                             @forelse ($inventoryItem->inventoryTransactions()->latest()->take(10)->get() as $transaction)
                                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
                                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $transaction->created_at->format('M d, Y H:i') }}</td>
+                                    @php
+                                        $isPositive = in_array($transaction->type, ['addition', 'release']);
+                                    @endphp
                                     <td class="px-4 py-3 text-sm">
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $transaction->type === 'in' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $isPositive ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' }}">
                                             {{ ucfirst($transaction->type) }}
                                         </span>
                                     </td>
-                                    <td class="px-4 py-3 text-sm text-right font-medium {{ $transaction->type === 'in' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
-                                        {{ $transaction->type === 'in' ? '+' : '-' }}{{ number_format($transaction->quantity, 0) }}
+                                    <td class="px-4 py-3 text-sm text-right font-medium {{ $isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400' }}">
+                                        {{ $isPositive ? '+' : '-' }}{{ number_format($transaction->quantity, 0) }}
                                     </td>
                                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $transaction->performer->full_name ?? 'System' }}</td>
                                     <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $transaction->notes ?? '-' }}</td>
