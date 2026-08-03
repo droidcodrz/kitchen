@@ -117,12 +117,13 @@
                 </div>
 
                 <div>
-                    <x-input-label for="item_type" :value="__('System Category')" />
+                    <x-input-label for="item_type" :value="__('Item Type')" />
                     <select id="item_type" name="item_type" x-model="itemType" @change="loadCustomFields()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                        <option value="">Select Category</option>
-                        @foreach($dropdownOptions['system_categories'] as $opt)
-                            <option value="{{ $opt->value }}" {{ old('item_type', $inventoryItem->item_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
-                        @endforeach
+                        <option value="">Select item type</option>
+                        <option value="raw_material" {{ old('item_type', $inventoryItem->item_type) === 'raw_material' ? 'selected' : '' }}>Raw Material</option>
+                        <option value="consumable" {{ old('item_type', $inventoryItem->item_type) === 'consumable' ? 'selected' : '' }}>Consumable</option>
+                        <option value="part" {{ old('item_type', $inventoryItem->item_type) === 'part' ? 'selected' : '' }}>Part</option>
+                        <option value="finished_good" {{ old('item_type', $inventoryItem->item_type) === 'finished_good' ? 'selected' : '' }}>Finished Good</option>
                     </select>
                     <x-input-error :messages="$errors->get('item_type')" class="mt-2" />
                 </div>
