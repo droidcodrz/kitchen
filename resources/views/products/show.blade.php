@@ -145,12 +145,16 @@
                                 <div>
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $material->name }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $material->sku }}</p>
+                                    @if($material->pivot->quantity_required)
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Needs {{ number_format($material->pivot->quantity_required, 2) }} {{ $material->unit_of_measure }} per unit</p>
+                                    @endif
                                 </div>
-                                @if($material->is_low_stock)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Low Stock</span>
-                                @else
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $material->stock_quantity }} {{ $material->unit_of_measure }}</span>
-                                @endif
+                                <div class="text-right">
+                                    @if($material->is_low_stock)
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Low Stock</span>
+                                    @endif
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ number_format($material->available_quantity, 0) }} {{ $material->unit_of_measure }} available</p>
+                                </div>
                             </a>
                         @endforeach
                     </div>

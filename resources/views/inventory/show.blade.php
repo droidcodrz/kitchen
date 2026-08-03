@@ -119,8 +119,13 @@
             </div>
 
             {{-- Stock Info --}}
-            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Stock Information</h3>
+            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6" x-data>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Stock Information</h3>
+                    <button type="button" @click="$dispatch('open-modal', 'adjust-stock')" class="inline-flex items-center px-3 py-1.5 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition">
+                        Adjust Stock
+                    </button>
+                </div>
                 <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div class="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
                         <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ number_format($inventoryItem->stock_quantity, 0) }}</p>
@@ -213,4 +218,47 @@
             </div>
         </div>
     </div>
+
+    {{-- Adjust Stock Modal --}}
+    <x-modal name="adjust-stock" :show="$errors->hasAny(['type', 'quantity', 'notes'])" maxWidth="md">
+        <div class="p-6">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Adjust Stock</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Current stock: {{ number_format($inventoryItem->stock_quantity, 0) }} {{ $inventoryItem->unit_of_measure }}</p>
+
+            <form method="POST" action="{{ route('inventory.adjust-stock', $inventoryItem) }}" class="space-y-4">
+                @csrf
+
+                <div>
+                    <x-input-label for="type" :value="__('Type')" />
+                    <select id="type" name="type" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                        <option value="addition" {{ old('type') === 'addition' ? 'selected' : '' }}>Addition (restock)</option>
+                        <option value="deduction" {{ old('type') === 'deduction' ? 'selected' : '' }}>Deduction (used/damaged/lost)</option>
+                        <option value="adjustment" {{ old('type') === 'adjustment' ? 'selected' : '' }}>Adjustment (set exact quantity)</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('type')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="quantity" :value="__('Quantity')" />
+                    <x-text-input id="quantity" name="quantity" type="number" step="0.01" min="0.01" class="mt-1 block w-full" :value="old('quantity')" required />
+                    <x-input-error :messages="$errors->get('quantity')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="notes" :value="__('Notes (optional)')" />
+                    <textarea id="notes" name="notes" rows="2" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('notes') }}</textarea>
+                    <x-input-error :messages="$errors->get('notes')" class="mt-2" />
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" x-on:click="$dispatch('close')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-6 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-all">
+                        Save
+                    </button>
+                </div>
+            </form>
+        </div>
+    </x-modal>
 </x-app-layout>
