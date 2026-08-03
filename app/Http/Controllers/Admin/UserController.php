@@ -49,6 +49,9 @@ class UserController extends Controller
 
         if ($teamId) {
             $user->teams()->attach($teamId, ['joined_at' => now()]);
+
+            return redirect()->route('teams.index')
+                ->with('success', 'Team member added successfully.');
         }
 
         return redirect()->route('admin.users.index')
