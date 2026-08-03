@@ -319,7 +319,7 @@
     </div>
 
     {{-- New Project Modal --}}
-    <x-modal name="new-project" :show="false" maxWidth="3xl">
+    <x-modal name="new-project" :show="$errors->hasAny(['name', 'client_id', 'status', 'proposal_signed_date', 'delivery_date', 'production_deadline', 'products', 'products.*', 'members', 'members.*', 'attachments', 'attachments.*'])" maxWidth="3xl">
         <div class="p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">New Project</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Fill in the details below to create a new project</p>
@@ -333,7 +333,8 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Project Name</label>
-                            <input type="text" name="name" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <input type="text" name="name" value="{{ old('name') }}" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            @error('name') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -341,21 +342,23 @@
                             <select name="client_id" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                 <option value="">Select client</option>
                                 @foreach($clients ?? [] as $client)
-                                    <option value="{{ $client->id }}">{{ $client->name }}</option>
+                                    <option value="{{ $client->id }}" {{ old('client_id') == $client->id ? 'selected' : '' }}>{{ $client->name }}</option>
                                 @endforeach
                             </select>
+                            @error('client_id') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
                             <select name="status" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                <option value="draft">Draft</option>
-                                <option value="confirmed">Confirmed</option>
+                                <option value="draft" {{ old('status', 'draft') === 'draft' ? 'selected' : '' }}>Draft</option>
+                                <option value="confirmed" {{ old('status') === 'confirmed' ? 'selected' : '' }}>Confirmed</option>
                             </select>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 Use "Change Status" after creation to move to production stages.<br>
                                 <span class="text-red-500">Note: Projects automatically marked as "Delayed" in real-time if delivery date passes.</span>
                             </p>
+                            @error('status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
@@ -394,12 +397,14 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Proposal Signed</label>
-                            <input type="date" name="proposal_signed_date" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <input type="date" name="proposal_signed_date" value="{{ old('proposal_signed_date') }}" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            @error('proposal_signed_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Date</label>
-                            <input type="date" name="delivery_date" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <input type="date" name="delivery_date" value="{{ old('delivery_date') }}" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            @error('delivery_date') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
@@ -471,6 +476,8 @@
                     @else
                         <p class="text-sm text-gray-500 dark:text-gray-400">No users available. Please add users first.</p>
                     @endif
+                    @error('members') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                    @error('attachments') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 {{-- Action Buttons --}}
