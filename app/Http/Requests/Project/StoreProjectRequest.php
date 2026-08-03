@@ -33,7 +33,7 @@ class StoreProjectRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'max:191'],
+            'name' => ['required', 'max:191', 'unique:projects,name'],
             'client_id' => ['required', 'exists:clients,id'],
             'status' => ['required', 'in:draft,confirmed'],
             'proposal_signed_date' => ['nullable', 'date'],
