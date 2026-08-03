@@ -79,6 +79,11 @@ class ProductController extends Controller
             $data['name'] = Product::generateDescription($data);
         }
 
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
+
         $data['slug'] = Str::slug($data['name']);
 
         if (empty($data['sku'])) {
@@ -146,6 +151,11 @@ class ProductController extends Controller
         if (empty($data['name'])) {
             $data['name'] = Product::generateDescription($data);
         }
+
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
 
         $data['slug'] = Str::slug($data['name']);
 

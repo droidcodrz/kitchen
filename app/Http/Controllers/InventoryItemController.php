@@ -65,6 +65,11 @@ class InventoryItemController extends Controller
             $data['name'] = InventoryItem::generateDescription($data);
         }
 
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
+
         if (empty($data['sku'])) {
             $data['sku'] = $data['item_label'];
             $suffix = 1;
@@ -139,6 +144,11 @@ class InventoryItemController extends Controller
         if (empty($data['name'])) {
             $data['name'] = InventoryItem::generateDescription($data);
         }
+
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
 
         if (empty($data['sku'])) {
             $data['sku'] = $data['item_label'];

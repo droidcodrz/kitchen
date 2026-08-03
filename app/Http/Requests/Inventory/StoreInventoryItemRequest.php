@@ -34,6 +34,7 @@ class StoreInventoryItemRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'max:191'],
+            'name_suffix' => ['nullable', 'max:100'],
             'sku' => ['nullable', 'unique:inventory_items,sku', 'max:100'],
             'item_type' => ['required', 'in:raw_material,consumable,part,finished_good'],
             'item_type_label' => ['nullable', 'max:100'],

@@ -28,6 +28,22 @@
         <form method="POST" action="{{ route('products.store') }}" class="p-6 space-y-6">
             @csrf
 
+            {{-- Custom Name / Suffix --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <x-input-label for="name" :value="__('Custom Name (optional)')" />
+                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" placeholder="Leave blank to use the auto-generated description" />
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">If entered, this replaces the auto-generated description above.</p>
+                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+                </div>
+                <div>
+                    <x-input-label for="name_suffix" :value="__('Name Suffix (optional)')" />
+                    <x-text-input id="name_suffix" name="name_suffix" type="text" class="mt-1 block w-full" :value="old('name_suffix')" placeholder="e.g. Type 1, Version A, Brass Handle" />
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Appended to the name to tell near-identical variants apart.</p>
+                    <x-input-error :messages="$errors->get('name_suffix')" class="mt-2" />
+                </div>
+            </div>
+
             {{-- TEST DIAMETER FIELD - TOP OF FORM --}}
             <div style="background: red; color: white; padding: 20px; margin-bottom: 20px; border: 5px solid yellow;">
                 <h1 style="font-size: 24px; font-weight: bold;">TEST: DIAMETER FIELD #1 (TOP)</h1>

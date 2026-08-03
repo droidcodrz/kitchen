@@ -34,6 +34,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => ['nullable', 'max:191'],
+            'name_suffix' => ['nullable', 'max:100'],
             'sku' => ['nullable', 'unique:products,sku', 'max:100'],
             'category_id' => ['required', 'exists:categories,id'],
             'folder_id' => ['nullable', 'exists:product_folders,id'],
