@@ -200,12 +200,12 @@
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     @foreach($inventoryItems ?? [] as $item)
                         <label class="flex items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition">
-                            <input type="checkbox" name="materials[]" value="{{ $item->id }}" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500" {{ in_array($item->id, old('materials', [])) ? 'checked' : '' }} />
+                            <input type="checkbox" name="material_ids[]" value="{{ $item->id }}" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500" {{ in_array($item->id, old('material_ids', [])) ? 'checked' : '' }} />
                             <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $item->name }}</span>
                         </label>
                     @endforeach
                 </div>
-                <x-input-error :messages="$errors->get('materials')" class="mt-2" />
+                <x-input-error :messages="$errors->get('material_ids')" class="mt-2" />
             </div>
 
             {{-- Actions --}}
