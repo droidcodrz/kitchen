@@ -50,8 +50,8 @@
                     </div>
                     @endif
                     <div>
-                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Item Type</dt>
-                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ ucfirst(str_replace('_', ' ', $inventoryItem->item_type)) }}</dd>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">System Category</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $inventoryItem->item_type }}</dd>
                     </div>
                     @if($inventoryItem->material_grade)
                     <div>

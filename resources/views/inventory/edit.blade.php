@@ -117,11 +117,11 @@
                 </div>
 
                 <div>
-                    <x-input-label for="item_type" :value="__('Item Type')" />
+                    <x-input-label for="item_type" :value="__('System Category')" />
                     <select id="item_type" name="item_type" x-model="itemType" @change="loadCustomFields()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                        <option value="">Select item type</option>
-                        @foreach($itemTypes ?? [] as $value => $label)
-                            <option value="{{ $value }}" {{ old('item_type', $inventoryItem->item_type) === $value ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="">Select category</option>
+                        @foreach($dropdownOptions['system_categories'] as $opt)
+                            <option value="{{ $opt->value }}" {{ old('item_type', $inventoryItem->item_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach
                     </select>
                     <x-input-error :messages="$errors->get('item_type')" class="mt-2" />
