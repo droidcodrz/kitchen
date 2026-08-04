@@ -36,7 +36,7 @@ class ProjectController extends Controller
         $view = session('projects_view', 'grid');
         $perPage = $view === 'table' ? 25 : 15;
 
-        $query = Project::with(['client', 'projectManager', 'teams', 'products', 'members']);
+        $query = Project::with(['client', 'projectManager', 'teams', 'products', 'members', 'attachments']);
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -64,6 +64,17 @@ class ProjectController extends Controller
 
         return view('projects.create', compact('products', 'teams', 'users', 'clients'));
     }
+
+    /**
+     * Check whether a project name is already taken (used for live validation).
+     */
+    public function checkName(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $exists = Project::where('name', $request->query('name'))->exists();
+
+        return response()->json(['exists' => $exists]);
+    }
+
 
     /**
      * Store a newly created project.
@@ -135,8 +146,15 @@ class ProjectController extends Controller
     /**
      * Remove the specified project (soft delete).
      */
-    public function destroy(Project $project): RedirectResponse
+        public function destroy(Project $project): RedirectResponse
     {
+        // Release any reserved materials before deleting -- only if they were
+        // reserved but not yet consumed (materials already deducted for
+        // in-production/finished/delivered projects should not be added back).
+        if ($project->status === 'confirmed') {
+            app(\App\Services\InventoryService::class)->releaseForProject($project);
+        }
+
         $project->delete();
 
         return redirect()->route('projects.index')

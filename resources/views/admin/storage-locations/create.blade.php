@@ -1,7 +1,12 @@
 <x-app-layout>
     <x-slot name="header">
+    <div class="flex items-center">
+        <a href="{{ route('admin.storage-locations.index') }}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        </a>
         <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">{{ __('Add Storage Location') }}</h2>
-    </x-slot>
+    </div>
+</x-slot>
 
     <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6 max-w-2xl">
         <form method="POST" action="{{ route('admin.storage-locations.store') }}">

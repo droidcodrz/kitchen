@@ -6,6 +6,7 @@ use App\Http\Requests\Team\StoreTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
 use App\Models\Team;
 use App\Models\User;
+use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -18,11 +19,13 @@ class TeamController extends Controller
     public function index(): View
     {
         $teams = Team::with(['users.role', 'projects'])
-            ->withCount(['users', 'projects'])
-            ->latest()
-            ->paginate(15);
+                ->withCount(['users', 'projects'])
+                ->latest()
+                ->paginate(15);
 
-        return view('teams.index', compact('teams'));
+            $roles = Role::all();
+
+return view('teams.index', compact('teams', 'roles'));
     }
 
     /**

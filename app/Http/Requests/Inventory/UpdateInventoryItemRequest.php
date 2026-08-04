@@ -36,8 +36,9 @@ class UpdateInventoryItemRequest extends FormRequest
 
         return [
             'name' => ['nullable', 'max:191'],
+            'name_suffix' => ['nullable', 'max:100'],
             'sku' => ['nullable', 'unique:inventory_items,sku,' . $itemId, 'max:100'],
-            'item_type' => ['required', 'in:raw_material,consumable,part,finished_good'],
+            'item_type' => ['required', 'max:100'],
             'item_type_label' => ['nullable', 'max:100'],
             'inventory_type' => ['nullable', 'max:100'],
             'material_type' => ['required', 'max:100'],

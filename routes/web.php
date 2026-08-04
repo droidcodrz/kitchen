@@ -23,6 +23,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\TrashController;
+use App\Http\Controllers\Admin\CustomFieldDefinitionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -57,6 +58,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Projects
+    Route::get('projects/check-name', [ProjectController::class, 'checkName'])
+    ->name('projects.check-name');
     Route::resource('projects', ProjectController::class);
     Route::patch('projects/{project}/status', [ProjectController::class, 'updateStatus'])
         ->name('projects.update-status');
@@ -81,6 +84,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->except(['create', 'show']);
     Route::post('product-folders/move-product', [ProductFolderController::class, 'moveProduct'])
         ->name('product-folders.move-product');
+
+        Route::get('inventory/custom-fields/get', [InventoryItemController::class, 'getCustomFields'])
+    ->name('inventory.custom-fields.get');
 
     // Inventory
     Route::resource('inventory', InventoryItemController::class)
@@ -172,6 +178,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ->name('alert-configurations.index');
         Route::patch('alert-configurations/{alertConfiguration}', [AlertConfigurationController::class, 'update'])
             ->name('alert-configurations.update');
+
+        Route::resource('custom-field-definitions', CustomFieldDefinitionController::class);
     });
 });
 

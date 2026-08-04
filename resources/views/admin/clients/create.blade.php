@@ -36,7 +36,7 @@
 
                     <div>
                         <x-input-label for="phone" :value="__('Phone')" />
-                        <x-text-input id="phone" name="phone" type="text" class="mt-1 block w-full" :value="old('phone')" placeholder="+1 (555) 000-0000" />
+                        <x-text-input id="phone" name="phone" type="tel" pattern="^(\+91[\-\s]?)?[6-9]\d{9}$" maxlength="13" class="mt-1 block w-full" :value="old('phone')" placeholder="9876543210" />
                         <x-input-error :messages="$errors->get('phone')" class="mt-2" />
                     </div>
 

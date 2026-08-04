@@ -9,6 +9,11 @@ use Illuminate\Support\Str;
 
 class ProjectService
 {
+    public function __construct(
+        protected InventoryService $inventoryService
+    ) {}
+
+
     /**
      * Generate a unique order number (e.g. ORD-000001).
      */
@@ -48,12 +53,23 @@ class ProjectService
      *
      * @throws \InvalidArgumentException
      */
-    public function transitionStatus(Project $project, string $newStatus): Project
+        public function transitionStatus(Project $project, string $newStatus): Project
     {
         if (!$this->canTransitionTo($project, $newStatus)) {
             throw new \InvalidArgumentException(
                 "Cannot transition project from '{$project->status}' to '{$newStatus}'."
             );
+        }
+
+        // Reserve required materials once the order is confirmed
+        if ($newStatus === 'confirmed') {
+            $this->inventoryService->reserveForProject($project);
+        }
+
+        // Deduct (consume) reserved materials once production actually starts.
+        // Throws if stock is insufficient, which blocks the status change.
+        if ($newStatus === 'in_production') {
+            $this->inventoryService->consumeForProject($project);
         }
 
         $project->update(['status' => $newStatus]);
@@ -119,6 +135,11 @@ class ProjectService
                     'uploaded_by' => auth()->id(),
                 ]);
             }
+        }
+
+         // If the project was created already confirmed, reserve its materials immediately
+        if ($project->status === 'confirmed') {
+            $this->inventoryService->reserveForProject($project);
         }
 
         return $project->load(['client', 'projectManager', 'products', 'teams', 'members']);
@@ -224,19 +245,9 @@ class ProjectService
      */
     public function checkAllDelayedProjects(): int
     {
-        $count = 0;
-        $today = Carbon::today();
-
-        $projects = Project::whereIn('status', ['confirmed', 'in_production'])
-            ->whereNotNull('delivery_date')
-            ->where('delivery_date', '<', $today)
-            ->get();
-
-        foreach ($projects as $project) {
-            $project->update(['status' => 'delayed']);
-            $count++;
-        }
-
-        return $count;
+        return Project::whereIn('status', ['confirmed', 'in_production'])
+        ->whereNotNull('delivery_date')
+        ->where('delivery_date', '<', Carbon::today())
+        ->update(['status' => 'delayed']);
     }
 }

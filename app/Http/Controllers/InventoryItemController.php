@@ -65,6 +65,11 @@ class InventoryItemController extends Controller
             $data['name'] = InventoryItem::generateDescription($data);
         }
 
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
+
         if (empty($data['sku'])) {
             $data['sku'] = $data['item_label'];
             $suffix = 1;
@@ -87,11 +92,19 @@ class InventoryItemController extends Controller
         if ($data['stock_quantity'] > 0) {
             InventoryTransaction::create([
                 'inventory_item_id' => $inventoryItem->id,
-                'type' => 'in',
+                'type' => 'addition',
                 'quantity' => $data['stock_quantity'],
                 'notes' => 'Initial stock entry',
                 'performed_by' => auth()->id(),
             ]);
+        }
+
+        if ($request->has('custom_fields')) {
+            foreach ($request->input('custom_fields', []) as $fieldId => $value) {
+                if (!empty($value)) {
+                    $inventoryItem->setCustomFieldValue($fieldId, $value);
+                }
+            }
         }
 
         return redirect()->route('inventory.index')
@@ -120,6 +133,8 @@ class InventoryItemController extends Controller
      */
     public function edit(InventoryItem $inventoryItem): View
     {
+        $inventoryItem->load('customFieldValues.definition');
+
         $vendors = Vendor::where('is_active', true)->get();
         $storageLocations = StorageLocation::where('is_active', true)->get();
         $dropdownOptions = $this->getDropdownOptions();
@@ -139,6 +154,11 @@ class InventoryItemController extends Controller
         if (empty($data['name'])) {
             $data['name'] = InventoryItem::generateDescription($data);
         }
+
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
 
         if (empty($data['sku'])) {
             $data['sku'] = $data['item_label'];
@@ -160,11 +180,24 @@ class InventoryItemController extends Controller
             $difference = $newStockQuantity - $oldStockQuantity;
             InventoryTransaction::create([
                 'inventory_item_id' => $inventoryItem->id,
-                'type' => $difference > 0 ? 'in' : 'out',
+                'type' => $difference > 0 ? 'addition' : 'deduction',
                 'quantity' => abs($difference),
                 'notes' => 'Stock adjusted via edit form',
                 'performed_by' => auth()->id(),
             ]);
+        }
+
+        if ($request->has('custom_fields')) {
+            foreach ($request->input('custom_fields', []) as $fieldId => $value) {
+                if (!empty($value)) {
+                    $inventoryItem->setCustomFieldValue($fieldId, $value);
+                } else {
+                    \App\Models\CustomFieldValue::where('custom_field_definition_id', $fieldId)
+                        ->where('entity_type', 'inventory_item')
+                        ->where('entity_id', $inventoryItem->id)
+                        ->delete();
+                }
+            }
         }
 
         return redirect()->route('inventory.show', $inventoryItem)
@@ -201,6 +234,24 @@ class InventoryItemController extends Controller
             return redirect()->back()
                 ->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Get the active custom fields that apply to a given item type (AJAX).
+     */
+    public function getCustomFields(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $itemType = $request->input('item_type');
+
+        $fields = \App\Models\CustomFieldDefinition::where('entity_type', 'inventory_item')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('field_label')
+            ->get()
+            ->filter(fn ($field) => $field->appliesToItemType($itemType))
+            ->values();
+
+        return response()->json(['fields' => $fields]);
     }
 
     private function getDropdownOptions(): array

@@ -1,0 +1,98 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex items-center">
+            <a href="{{ route('admin.custom-field-definitions.index') }}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            </a>
+            <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">{{ __('Add Custom Field') }}</h2>
+        </div>
+    </x-slot>
+
+    <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6 max-w-2xl" x-data="{ fieldType: '{{ old('field_type', 'text') }}' }">
+        <form method="POST" action="{{ route('admin.custom-field-definitions.store') }}">
+            @csrf
+            <div class="space-y-4">
+                <div>
+                    <x-input-label for="entity_type" :value="__('Applies To')" />
+                    <select id="entity_type" name="entity_type" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                        <option value="product" {{ old('entity_type') === 'product' ? 'selected' : '' }}>Products</option>
+                        <option value="inventory_item" {{ old('entity_type') === 'inventory_item' ? 'selected' : '' }}>Inventory Items</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('entity_type')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="category_id" :value="__('Category (optional)')" />
+                    <select id="category_id" name="category_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                        <option value="">All categories</option>
+                        @foreach($categories ?? [] as $category)
+                            <option value="{{ $category->id }}" {{ old('category_id') == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">For Products, leave blank to show this field for every category, or pick one to limit it.</p>
+                    <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="field_label" :value="__('Field Label')" />
+                    <x-text-input id="field_label" name="field_label" type="text" class="mt-1 block w-full" :value="old('field_label')" placeholder="e.g. Handle Style" required />
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">What users see on the form.</p>
+                    <x-input-error :messages="$errors->get('field_label')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="field_name" :value="__('Field Key')" />
+                    <x-text-input id="field_name" name="field_name" type="text" class="mt-1 block w-full font-mono" :value="old('field_name')" placeholder="e.g. handle_style" required />
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Lowercase letters, numbers, underscores only. Used internally to store the value.</p>
+                    <x-input-error :messages="$errors->get('field_name')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="field_type" :value="__('Field Type')" />
+                    <select id="field_type" name="field_type" x-model="fieldType" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                        <option value="text">Text</option>
+                        <option value="textarea">Textarea (long text)</option>
+                        <option value="number">Number</option>
+                        <option value="date">Date</option>
+                        <option value="select">Dropdown (select)</option>
+                        <option value="boolean">Yes/No</option>
+                    </select>
+                    <x-input-error :messages="$errors->get('field_type')" class="mt-2" />
+                </div>
+
+                <div x-show="fieldType === 'select'" x-cloak>
+                    <x-input-label for="options_text" :value="__('Dropdown Options')" />
+                    <textarea id="options_text" name="options_text" rows="4" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" placeholder="One option per line">{{ old('options_text') }}</textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">One option per line, e.g. Brass, Chrome, Matte Black.</p>
+                    <x-input-error :messages="$errors->get('options')" class="mt-2" />
+                </div>
+
+                <div>
+                    <x-input-label for="sort_order" :value="__('Sort Order')" />
+                    <x-text-input id="sort_order" name="sort_order" type="number" min="0" class="mt-1 block w-full" :value="old('sort_order', 0)" />
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Lower numbers appear first on the form.</p>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <label class="flex items-center">
+                        <input type="hidden" name="is_required" value="0">
+                        <input type="checkbox" name="is_required" value="1" {{ old('is_required') ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Required</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="hidden" name="is_active" value="0">
+                        <input type="checkbox" name="is_active" value="1" {{ old('is_active', true) ? 'checked' : '' }} class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Active</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3 pt-6 mt-6 border-t border-gray-200 dark:border-gray-700">
+                <a href="{{ route('admin.custom-field-definitions.index') }}" class="inline-flex items-center px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md font-semibold text-xs text-gray-700 dark:text-gray-300 uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    Cancel
+                </a>
+                <x-primary-button>Add Field</x-primary-button>
+            </div>
+        </form>
+    </div>
+</x-app-layout>
