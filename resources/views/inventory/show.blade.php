@@ -116,6 +116,28 @@
                         </div>
                     @endif
                 </dl>
+
+                @if($inventoryItem->customFieldValues->isNotEmpty())
+                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Additional Fields</h4>
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            @foreach($inventoryItem->customFieldValues as $fieldValue)
+                                @if($fieldValue->definition)
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $fieldValue->definition->field_label }}</dt>
+                                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                            @if($fieldValue->definition->field_type === 'boolean')
+                                                {{ $fieldValue->value ? 'Yes' : 'No' }}
+                                            @else
+                                                {{ $fieldValue->value ?: '—' }}
+                                            @endif
+                                        </dd>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </dl>
+                    </div>
+                @endif
             </div>
 
             {{-- Stock Info --}}

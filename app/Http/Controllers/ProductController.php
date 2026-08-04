@@ -118,7 +118,7 @@ class ProductController extends Controller
      */
     public function show(Product $product): View
     {
-        $product->load(['category', 'requiredMaterials.vendor', 'projects']);
+        $product->load(['category', 'requiredMaterials.vendor', 'projects', 'customFieldValues.definition']);
 
         return view('products.show', compact('product'));
     }

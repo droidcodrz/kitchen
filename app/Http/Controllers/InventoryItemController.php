@@ -123,6 +123,7 @@ class InventoryItemController extends Controller
                 $query->latest()->limit(50);
             },
             'inventoryTransactions.performer',
+            'customFieldValues.definition',
         ]);
 
         return view('inventory.show', compact('inventoryItem'));
