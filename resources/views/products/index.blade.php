@@ -452,11 +452,22 @@
             <form method="POST" action="{{ route('products.store') }}" class="space-y-4">
                 @csrf
 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Custom Name (optional)</label>
+                        <input type="text" name="name" placeholder="Leave blank to use the auto-generated description" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name Suffix (optional)</label>
+                        <input type="text" name="name_suffix" placeholder="e.g. Type 1, Version A, Brass Handle" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {{-- Row 1: Item Type, Material Type, Material Grade --}}
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Item Type <span class="text-red-500">*</span></label>
-                        <select name="item_type" x-model="itemType" @change="updatePreview()" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                        <select name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                             <option value="">Select item type</option>
                             @foreach($dropdownOptions['item_types'] as $opt)
                                 <option value="{{ $opt->value }}">{{ $opt->label }}</option>
@@ -517,7 +528,7 @@
                     <div x-data="{ showQuickAdd: false, newCategoryName: '' }">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category <span class="text-red-500">*</span></label>
                         <div class="flex gap-2">
-                            <select name="category_id" id="modal-category-select" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <select name="category_id" id="modal-category-select" x-model="categoryId" @change="loadCustomFields()" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                 <option value="">Select category</option>
                                 @foreach($categories ?? [] as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
@@ -587,6 +598,51 @@
                     </div>
                 </div>
 
+                {{-- Custom Fields Section --}}
+                <div x-show="customFields.length > 0" x-transition class="p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
+                    <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">Additional Fields for this Category</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <template x-for="field in customFields" :key="field.id">
+                            <div>
+                                <label :for="'custom_field_' + field.id" class="block text-sm font-medium text-gray-700 dark:text-gray-300" x-text="field.field_label + (field.is_required ? ' *' : '')"></label>
+
+                                <template x-if="field.field_type === 'text'">
+                                    <input type="text" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                </template>
+
+                                <template x-if="field.field_type === 'number'">
+                                    <input type="number" step="0.01" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                </template>
+
+                                <template x-if="field.field_type === 'date'">
+                                    <input type="date" :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" />
+                                </template>
+
+                                <template x-if="field.field_type === 'select'">
+                                    <select :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                        <option value="">Select...</option>
+                                        <template x-for="option in field.options" :key="option">
+                                            <option :value="option" x-text="option"></option>
+                                        </template>
+                                    </select>
+                                </template>
+
+                                <template x-if="field.field_type === 'boolean'">
+                                    <select :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                                        <option value="">-</option>
+                                        <option value="1">Yes</option>
+                                        <option value="0">No</option>
+                                    </select>
+                                </template>
+
+                                <template x-if="field.field_type === 'textarea'">
+                                    <textarea :name="'custom_fields[' + field.id + ']'" :id="'custom_field_' + field.id" :required="field.is_required" rows="3" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm"></textarea>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
                 <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" x-on:click="$dispatch('close')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
                         Cancel
@@ -613,7 +669,25 @@
         return {
             itemType: '', materialType: '', materialGrade: '',
             thicknessGauge: '', thicknessMm: '', dimension: '',
+            categoryId: '',
             generatedLabel: '', generatedDescription: '',
+            customFields: [],
+
+            async loadCustomFields() {
+                if (!this.categoryId) {
+                    this.customFields = [];
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`{{ route('products.custom-fields.get') }}?category_id=${this.categoryId}&item_type=${encodeURIComponent(this.itemType)}`);
+                    const data = await response.json();
+                    this.customFields = data.fields || [];
+                } catch (error) {
+                    console.error('Error loading custom fields:', error);
+                    this.customFields = [];
+                }
+            },
 
             updatePreview() {
                 let label = '';
