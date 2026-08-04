@@ -235,9 +235,12 @@ class ProductController extends Controller
             return response()->json(['fields' => []]);
         }
 
-        $query = \App\Models\CustomFieldDefinition::where('category_id', $categoryId)
-            ->where('entity_type', 'product')
+        $query = \App\Models\CustomFieldDefinition::where('entity_type', 'product')
             ->where('is_active', true)
+            ->where(function ($q) use ($categoryId) {
+                $q->where('category_id', $categoryId)
+                    ->orWhereNull('category_id');
+            })
             ->orderBy('sort_order')
             ->orderBy('field_label');
 
