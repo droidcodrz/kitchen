@@ -46,6 +46,7 @@ class UpdateInventoryItemRequest extends FormRequest
             'thickness_gauge' => ['nullable', 'max:50'],
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],
             'dimension' => ['nullable', 'max:50'],
+            'diameter' => ['nullable', 'max:50'],
             'stock_quantity' => ['nullable', 'numeric', 'min:0'],
             'reserved_quantity' => ['nullable', 'numeric', 'min:0'],
             'minimum_stock_level' => ['nullable', 'numeric', 'min:0'],

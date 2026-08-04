@@ -96,6 +96,12 @@
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Sale Price</dt>
                         <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $product->unit_sale_price ? '$' . number_format($product->unit_sale_price, 2) : '—' }}</dd>
                     </div>
+                    @if($product->diameter)
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Diameter (inches)</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $product->diameter }}</dd>
+                    </div>
+                    @endif
                     <div>
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
                         <dd class="mt-1"><x-status-badge :status="$product->is_active ? 'active' : 'inactive'" /></dd>

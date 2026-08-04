@@ -46,6 +46,7 @@ class StoreProductRequest extends FormRequest
             'thickness_gauge' => ['nullable', 'max:50'],
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],
             'dimension' => ['nullable', 'max:50'],
+            'diameter' => ['nullable', 'max:50'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'unit_sale_price' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable'],

@@ -44,14 +44,6 @@
                 </div>
             </div>
 
-            {{-- TEST DIAMETER FIELD - TOP OF FORM --}}
-            <div style="background: red; color: white; padding: 20px; margin-bottom: 20px; border: 5px solid yellow;">
-                <h1 style="font-size: 24px; font-weight: bold;">TEST: DIAMETER FIELD #1 (TOP)</h1>
-                <label style="font-size: 18px; font-weight: bold;">Diameter (inches):</label>
-                <input type="text" name="diameter_test_1" placeholder="TEST FIELD 1" style="width: 100%; padding: 10px; font-size: 16px; border: 3px solid black;">
-                <p style="margin-top: 10px;">If you see this RED BOX, the file is loading!</p>
-            </div>
-
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {{-- Row 1: Item Type, Material Type, Material Grade --}}
                 <div>
@@ -111,13 +103,10 @@
                     <x-input-error :messages="$errors->get('dimension')" class="mt-2" />
                 </div>
 
-                {{-- DIAMETER FIELD - MAIN LOCATION --}}
-                <div style="background: blue; padding: 20px; border: 10px solid orange;">
-                    <label for="diameter" style="color: white; font-size: 20px; font-weight: bold; display: block; margin-bottom: 10px;">
-                        ⭐ DIAMETER (inches) - FIELD #2 ⭐
-                    </label>
-                    <input id="diameter" name="diameter" type="text" placeholder="Enter diameter e.g. 2.5" value="{{ old('diameter') }}" style="width: 100%; padding: 15px; font-size: 18px; border: 5px solid yellow; background: white;">
-                    <p style="color: yellow; font-size: 14px; margin-top: 10px; font-weight: bold;">BLUE BOX = DIAMETER FIELD IS HERE!</p>
+                <div>
+                    <x-input-label for="diameter" :value="__('Diameter (inches)')" />
+                    <x-text-input id="diameter" name="diameter" type="text" class="mt-1 block w-full" :value="old('diameter')" placeholder="e.g. 2.5" />
+                    <x-input-error :messages="$errors->get('diameter')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="category_id" :value="__('Category')" />

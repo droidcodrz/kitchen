@@ -77,6 +77,12 @@
                         <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $inventoryItem->dimension }}</dd>
                     </div>
                     @endif
+                    @if($inventoryItem->diameter)
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Diameter (inches)</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $inventoryItem->diameter }}</dd>
+                    </div>
+                    @endif
                     @if($inventoryItem->inventory_type)
                     <div>
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Inventory Type</dt>
