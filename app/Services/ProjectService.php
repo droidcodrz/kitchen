@@ -236,8 +236,8 @@ class ProjectService
      */
     public function checkAndMarkDelayed(Project $project): bool
     {
-        // Only check projects that are in confirmed or in_production status
-        if (!in_array($project->status, ['confirmed', 'in_production'])) {
+        // Only check projects that are actively in progress
+        if (!in_array($project->status, ['confirmed', 'design', 'in_production', 'inspection'])) {
             return false;
         }
 
@@ -256,7 +256,7 @@ class ProjectService
      */
     public function checkAllDelayedProjects(): int
     {
-        $projects = Project::whereIn('status', ['confirmed', 'in_production'])
+        $projects = Project::whereIn('status', ['confirmed', 'design', 'in_production', 'inspection'])
             ->whereNotNull('delivery_date')
             ->where('delivery_date', '<', Carbon::today())
             ->get();

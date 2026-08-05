@@ -63,8 +63,10 @@
                         '' => 'All',
                         'draft' => 'Draft',
                         'confirmed' => 'Confirmed',
+                        'design' => 'Design',
                         'in_production' => 'In Production',
                         'delayed' => 'Delayed',
+                        'inspection' => 'Inspection',
                         'finished' => 'Finished',
                         'delivered' => 'Delivered',
                     ];

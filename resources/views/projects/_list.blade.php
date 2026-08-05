@@ -50,10 +50,12 @@
                                     $statusColors = [
                                         'draft' => 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
                                         'confirmed' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-                                        'in_production' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                                        'design' => 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400',
+                                        'in_production' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
                                         'delayed' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-                                        'finished' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-                                        'delivered' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                                        'inspection' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+                                        'finished' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                                        'delivered' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
                                     ];
                                     $statusColor = $statusColors[$project->status ?? 'draft'] ?? $statusColors['draft'];
                                 @endphp
@@ -129,10 +131,12 @@
                     $statusColors = [
                         'draft' => 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
                         'confirmed' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
-                        'in_production' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                        'design' => 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-400',
+                        'in_production' => 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400',
                         'delayed' => 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-                        'finished' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-                        'delivered' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                        'inspection' => 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+                        'finished' => 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+                        'delivered' => 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
                     ];
                     $statusColor = $statusColors[$project->status ?? 'draft'] ?? $statusColors['draft'];
                 @endphp

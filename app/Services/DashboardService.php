@@ -24,7 +24,7 @@ class DashboardService
      */
     public function getStats(): array
     {
-        $activeProjects = Project::whereIn('status', ['confirmed', 'in_production'])->count();
+        $activeProjects = Project::whereIn('status', ['confirmed', 'design', 'in_production', 'inspection'])->count();
 
         $delayedProjects = Project::where('status', 'delayed')->count();
 

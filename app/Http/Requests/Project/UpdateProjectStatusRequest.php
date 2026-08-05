@@ -33,7 +33,7 @@ class UpdateProjectStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'in:draft,confirmed,in_production,delayed,finished,delivered'],
+            'status' => ['required', 'in:draft,confirmed,design,in_production,delayed,inspection,finished,delivered'],
         ];
     }
 }
