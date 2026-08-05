@@ -38,6 +38,23 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {{-- Search --}}
+        <div class="mb-4" x-data="{ q: '{{ request('search', '') }}' }">
+            <div class="relative max-w-md">
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+                <input type="text" x-model="q" placeholder="Search by name, order #, or client..."
+                    x-on:input.debounce.400ms="
+                        const params = new URLSearchParams(window.location.search);
+                        if (q) { params.set('search', q); } else { params.delete('search'); }
+                        params.delete('page');
+                        Livewire.navigate('{{ route('projects.index') }}?' + params.toString());
+                    "
+                    class="block w-full pl-9 pr-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+            </div>
+        </div>
+
         {{-- Status Filter Tabs --}}
         <div class="mb-6">
             <div class="flex items-center gap-2 overflow-x-auto pb-2">
@@ -55,7 +72,7 @@
                 @endphp
 
                 @foreach($statuses as $value => $label)
-                    <a href="{{ route('projects.index', ['status' => $value]) }}"
+                    <a href="{{ route('projects.index', ['status' => $value] + request()->except(['status', 'page'])) }}"
                        wire:navigate
                        class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
                               {{ $currentStatus === $value

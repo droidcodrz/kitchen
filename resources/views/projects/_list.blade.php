@@ -5,13 +5,30 @@
             <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                 <thead class="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Order No</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Project Name</th>
+                        @php
+                            $sortLink = fn (string $column) => route('projects.index', array_merge(
+                                request()->except(['sort', 'direction', 'page']),
+                                ['sort' => $column, 'direction' => (request('sort') === $column && request('direction', 'desc') === 'asc') ? 'desc' : 'asc']
+                            ));
+                            $sortIcon = fn (string $column) => request('sort') === $column
+                                ? (request('direction', 'desc') === 'asc' ? '&uarr;' : '&darr;')
+                                : '';
+                        @endphp
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <a href="{{ $sortLink('order_no') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">Order No {!! $sortIcon('order_no') !!}</a>
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <a href="{{ $sortLink('name') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">Project Name {!! $sortIcon('name') !!}</a>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Client</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <a href="{{ $sortLink('status') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">Status {!! $sortIcon('status') !!}</a>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Products</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Team</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Delivery Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                            <a href="{{ $sortLink('delivery_date') }}" wire:navigate class="inline-flex items-center gap-1 hover:text-gray-700 dark:hover:text-gray-200">Delivery Date {!! $sortIcon('delivery_date') !!}</a>
+                        </th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>

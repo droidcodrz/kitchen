@@ -42,14 +42,29 @@ class ProjectController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $projects = $query->latest()->paginate($perPage);
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('order_no', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($clientQuery) use ($search) {
+                        $clientQuery->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        $sortable = ['order_no', 'name', 'status', 'delivery_date', 'created_at'];
+        $sort = in_array($request->input('sort'), $sortable) ? $request->input('sort') : 'created_at';
+        $direction = $request->input('direction') === 'asc' ? 'asc' : 'desc';
+
+        $projects = $query->orderBy($sort, $direction)->paginate($perPage)->withQueryString();
 
         // Get data for the "New Project" modal
         $productsList = Product::where('is_active', true)->orderBy('name')->get();
         $clients = Client::where('is_active', true)->orderBy('name')->get();
         $users = User::whereNull('deleted_at')->where('status', 'active')->orderBy('first_name')->get();
 
-        return view('projects.index', compact('projects', 'productsList', 'clients', 'users', 'view'));
+        return view('projects.index', compact('projects', 'productsList', 'clients', 'users', 'view', 'sort', 'direction'));
     }
 
     /**
