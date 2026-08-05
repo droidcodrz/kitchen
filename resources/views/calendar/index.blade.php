@@ -66,9 +66,10 @@
     @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
+        function initCalendar() {
             const calendarEl = document.getElementById('calendar');
-            if (!calendarEl) return;
+            if (!calendarEl || calendarEl.dataset.calendarInitialized) return;
+            calendarEl.dataset.calendarInitialized = '1';
 
             const events = @json($events ?? []);
 
@@ -101,7 +102,10 @@
             });
 
             calendar.render();
-        });
+        }
+
+        document.addEventListener('DOMContentLoaded', initCalendar);
+        document.addEventListener('livewire:navigated', initCalendar);
     </script>
     @endpush
 </x-app-layout>
