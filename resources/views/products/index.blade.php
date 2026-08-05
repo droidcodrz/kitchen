@@ -52,6 +52,7 @@
                     <nav class="space-y-1">
                         <!-- All Products -->
                         <a href="{{ route('products.index') }}"
+                           wire:navigate
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all
                                   {{ !request()->has('folder') ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800' }}">
                             <div class="flex items-center">
@@ -63,6 +64,7 @@
 
                         <!-- Uncategorized -->
                         <a href="{{ route('products.index', ['folder' => 'none']) }}"
+                           wire:navigate
                            class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all
                                   {{ request()->get('folder') === 'none' ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800' }}">
                             <div class="flex items-center">
@@ -75,6 +77,7 @@
                         @foreach($folders ?? [] as $folder)
                             <div x-data="{ open: false }" class="relative">
                                 <a href="{{ route('products.index', ['folder' => $folder->id]) }}"
+                                   wire:navigate
                                    class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all
                                           {{ request()->get('folder') == $folder->id ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800' }}">
                                     <div class="flex items-center flex-1 min-w-0">
