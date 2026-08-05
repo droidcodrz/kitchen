@@ -54,7 +54,7 @@ class UpdateProjectRequest extends FormRequest
             'delete_attachments' => ['nullable', 'array'],
             'delete_attachments.*' => ['exists:attachments,id'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx'], // 10MB max per file
+            'attachments.*' => ['file', 'max:102400', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx,mp4,mov,avi,webm,mkv'], // 100MB max per file, videos included
         ];
     }
 }

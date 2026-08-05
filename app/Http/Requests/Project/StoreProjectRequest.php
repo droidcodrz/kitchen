@@ -50,7 +50,7 @@ class StoreProjectRequest extends FormRequest
             'members' => ['nullable', 'array'],
             'members.*' => ['exists:users,id'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx'],
+            'attachments.*' => ['file', 'max:102400', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx,mp4,mov,avi,webm,mkv'], // 100MB max per file, videos included
         ];
     }
 }
