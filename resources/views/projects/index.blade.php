@@ -11,6 +11,7 @@
                     <!-- View Toggle -->
                     <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         <a href="{{ route('projects.index', ['view' => 'grid'] + request()->except('view')) }}"
+                           wire:navigate
                            class="p-2 rounded {{ ($view ?? 'grid') === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : '' }}"
                            title="Grid View">
                             <svg class="w-5 h-5 {{ ($view ?? 'grid') === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,6 +19,7 @@
                             </svg>
                         </a>
                         <a href="{{ route('projects.index', ['view' => 'table'] + request()->except('view')) }}"
+                           wire:navigate
                            class="p-2 rounded {{ ($view ?? 'grid') === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : '' }}"
                            title="Table View">
                             <svg class="w-5 h-5 {{ ($view ?? 'grid') === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
