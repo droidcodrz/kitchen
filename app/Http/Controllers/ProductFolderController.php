@@ -103,7 +103,7 @@ class ProductFolderController extends Controller
     /**
      * Move a product to a folder.
      */
-    public function moveProduct(Request $request): RedirectResponse
+    public function moveProduct(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'product_id' => ['required', 'exists:products,id'],
@@ -116,6 +116,10 @@ class ProductFolderController extends Controller
         $folderName = $validated['folder_id']
             ? ProductFolder::find($validated['folder_id'])->name
             : 'Uncategorized';
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => "Product moved to \"{$folderName}\" successfully."]);
+        }
 
         return redirect()->back()
             ->with('success', "Product moved to \"{$folderName}\" successfully.");

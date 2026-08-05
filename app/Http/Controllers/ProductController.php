@@ -47,6 +47,10 @@ class ProductController extends Controller
             ->orderBy('name')
             ->get();
 
+        if ($request->ajax()) {
+            return view('products._main', compact('products', 'folders', 'view'));
+        }
+
         $dropdownOptions = $this->getDropdownOptions();
 
         return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions'));
