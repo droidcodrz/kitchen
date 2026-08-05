@@ -43,7 +43,7 @@ class StorageLocationSeeder extends Seeder
         ];
 
         foreach ($locations as $location) {
-            StorageLocation::create($location);
+            StorageLocation::firstOrCreate(['code' => $location['code']], $location);
         }
     }
 }

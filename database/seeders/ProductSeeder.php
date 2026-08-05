@@ -130,7 +130,11 @@ class ProductSeeder extends Seeder
         ];
 
         foreach ($products as $productData) {
-            $product = Product::create($productData);
+            $product = Product::firstOrCreate(['sku' => $productData['sku']], $productData);
+
+            if (! $product->wasRecentlyCreated) {
+                continue;
+            }
 
             // Attach random inventory items as required materials (2-4 items per product)
             $materialIds = InventoryItem::inRandomOrder()->limit(rand(2, 4))->pluck('id');

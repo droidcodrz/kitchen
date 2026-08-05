@@ -134,16 +134,16 @@ class ProjectSeeder extends Seeder
             $teamIds = $projectData['team_ids'];
             unset($projectData['product_ids'], $projectData['team_ids']);
 
-            $project = Project::create($projectData);
+            $project = Project::firstOrCreate(['order_no' => $projectData['order_no']], $projectData);
 
             // Attach products
             if (!empty($productIds)) {
-                $project->products()->attach($productIds);
+                $project->products()->syncWithoutDetaching($productIds);
             }
 
             // Attach teams
             if (!empty($teamIds)) {
-                $project->teams()->attach($teamIds);
+                $project->teams()->syncWithoutDetaching($teamIds);
             }
 
             // Attach team members as project members
@@ -152,7 +152,7 @@ class ProjectSeeder extends Seeder
                 if ($team) {
                     $memberIds = $team->users()->pluck('users.id')->toArray();
                     if (!empty($memberIds)) {
-                        $project->members()->attach($memberIds);
+                        $project->members()->syncWithoutDetaching($memberIds);
                     }
                 }
             }
