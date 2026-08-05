@@ -41,9 +41,15 @@ class StoreProjectRequest extends FormRequest
             'production_deadline' => ['nullable', 'date'],
             'description' => ['nullable'],
             'notes' => ['nullable'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['string', 'max:50'],
             'project_manager_id' => ['nullable', 'exists:users,id'],
             'products' => ['nullable', 'array'],
-            'products.*.product_id' => ['required_with:products', 'exists:products,id'],
+            // Both project forms always render one blank equipment row by
+            // default (product_id empty, quantity 1) so there's a row to
+            // fill in - that blank row must stay valid on its own, since
+            // ProjectService already skips rows with no product_id.
+            'products.*.product_id' => ['nullable', 'exists:products,id'],
             'products.*.quantity' => ['required_with:products', 'integer', 'min:1'],
             'team_ids' => ['nullable', 'array'],
             'team_ids.*' => ['exists:teams,id'],

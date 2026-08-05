@@ -237,6 +237,26 @@
                     </div>
                 </div>
 
+                {{-- Internal Labels --}}
+                <div x-data="{ labels: {{ json_encode(old('labels', [])) }}, newLabel: '' }">
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Internal Labels</h3>
+                    <div class="flex flex-wrap gap-2 mb-2" x-show="labels.length">
+                        <template x-for="(label, index) in labels" :key="index">
+                            <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+                                <span x-text="label"></span>
+                                <button type="button" @click="labels.splice(index, 1)" class="text-gray-400 hover:text-red-500">&times;</button>
+                                <input type="hidden" name="labels[]" :value="label">
+                            </span>
+                        </template>
+                    </div>
+                    <input type="text" x-model="newLabel"
+                        @keydown.enter.prevent="if (newLabel.trim()) { labels.push(newLabel.trim()); newLabel = ''; }"
+                        @keydown.comma.prevent="if (newLabel.trim()) { labels.push(newLabel.trim()); newLabel = ''; }"
+                        placeholder="Type a label and press Enter (e.g. Rush Order, VIP Client)"
+                        class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                    @error('labels') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
                 {{-- Assign Team Members --}}
                 <div>
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Assign Team Members</h3>

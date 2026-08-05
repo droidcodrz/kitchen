@@ -120,6 +120,7 @@ class ProjectController extends Controller
             'members',
             'attachments.uploader',
             'calendarEvents',
+            'milestones',
             'activities' => function ($query) {
                 $query->with('user')->latest()->limit(20);
             },

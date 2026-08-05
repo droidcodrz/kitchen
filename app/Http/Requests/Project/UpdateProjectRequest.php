@@ -37,15 +37,26 @@ class UpdateProjectRequest extends FormRequest
         return [
             'name' => ['required', 'max:191', 'unique:projects,name,' . $projectId],
             'client_id' => ['required', 'exists:clients,id'],
-            'status' => ['required', 'in:draft,confirmed'],
+            // The status <select> only ever offers draft/confirmed, but once a
+            // project has moved past that (design, in_production, delayed, ...)
+            // the form falls back to a read-only display that still posts the
+            // project's current status via a hidden field, so this must accept
+            // every valid status or every edit to an in-progress project fails.
+            'status' => ['required', 'in:draft,confirmed,design,in_production,delayed,inspection,finished,delivered'],
             'project_manager_id' => ['nullable', 'exists:users,id'],
             'proposal_signed_date' => ['nullable', 'date'],
             'delivery_date' => ['nullable', 'date'],
             'production_deadline' => ['nullable', 'date'],
             'description' => ['nullable'],
             'notes' => ['nullable'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['string', 'max:50'],
             'products' => ['nullable', 'array'],
-            'products.*.product_id' => ['required_with:products', 'exists:products,id'],
+            // Both project forms always render one blank equipment row by
+            // default (product_id empty, quantity 1) so there's a row to
+            // fill in - that blank row must stay valid on its own, since
+            // ProjectService already skips rows with no product_id.
+            'products.*.product_id' => ['nullable', 'exists:products,id'],
             'products.*.quantity' => ['required_with:products', 'integer', 'min:1'],
             'team_ids' => ['nullable', 'array'],
             'team_ids.*' => ['exists:teams,id'],

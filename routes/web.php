@@ -19,6 +19,7 @@ use App\Http\Controllers\ProductFolderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectMilestoneController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamController;
@@ -71,6 +72,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('projects.attachments.download');
     Route::delete('projects/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy'])
         ->name('projects.attachments.destroy');
+
+    Route::post('projects/{project}/milestones', [ProjectMilestoneController::class, 'store'])
+        ->name('projects.milestones.store');
+    Route::patch('projects/{project}/milestones/{milestone}', [ProjectMilestoneController::class, 'update'])
+        ->name('projects.milestones.update');
+    Route::delete('projects/{project}/milestones/{milestone}', [ProjectMilestoneController::class, 'destroy'])
+        ->name('projects.milestones.destroy');
 
     // Products
     Route::get('products/custom-fields/get', [ProductController::class, 'getCustomFields'])
