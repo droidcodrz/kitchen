@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductFolder;
 use App\Models\Project;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -51,23 +52,45 @@ class TrashController extends Controller
                 ->get();
         }
 
+        $counts = [
+            'projects' => in_array($type, ['all', 'projects']) ? $trashedProjects->count() : Project::onlyTrashed()->count(),
+            'products' => in_array($type, ['all', 'products']) ? $trashedProducts->count() : Product::onlyTrashed()->count(),
+            'categories' => in_array($type, ['all', 'categories']) ? $trashedCategories->count() : Category::onlyTrashed()->count(),
+            'folders' => in_array($type, ['all', 'folders']) ? $trashedFolders->count() : ProductFolder::onlyTrashed()->count(),
+        ];
+
+        if ($request->ajax()) {
+            return view('trash._list', compact(
+                'trashedProjects',
+                'trashedProducts',
+                'trashedCategories',
+                'trashedFolders',
+                'type'
+            ));
+        }
+
         return view('trash.index', compact(
             'trashedProjects',
             'trashedProducts',
             'trashedCategories',
             'trashedFolders',
-            'type'
+            'type',
+            'counts'
         ));
     }
 
     /**
      * Restore a soft-deleted item.
      */
-    public function restore(Request $request, string $type, int $id): RedirectResponse
+    public function restore(Request $request, string $type, int $id): RedirectResponse|JsonResponse
     {
         $model = $this->getModel($type);
 
         if (!$model) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Invalid item type.'], 422);
+            }
+
             return redirect()->route('trash.index')
                 ->with('error', 'Invalid item type.');
         }
@@ -76,6 +99,10 @@ class TrashController extends Controller
         $item->restore();
 
         $typeName = $this->getTypeName($type);
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => "{$typeName} restored successfully."]);
+        }
 
         return redirect()->route('trash.index')
             ->with('success', "{$typeName} restored successfully.");
