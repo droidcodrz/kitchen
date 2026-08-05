@@ -20,6 +20,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectMilestoneController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamController;
@@ -133,6 +134,14 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('calendar-events/{calendarEvent}', [CalendarEventController::class, 'destroy'])
             ->name('api.calendar-events.destroy');
     });
+
+    // Reports
+    Route::get('reports', [ReportController::class, 'index'])
+        ->name('reports.index');
+    Route::get('reports/projects', [ReportController::class, 'projects'])
+        ->name('reports.projects');
+    Route::get('reports/inventory', [ReportController::class, 'inventory'])
+        ->name('reports.inventory');
 
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])
