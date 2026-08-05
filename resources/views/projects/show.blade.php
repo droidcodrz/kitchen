@@ -144,25 +144,6 @@
 
         {{-- Sidebar --}}
         <div class="space-y-6">
-            {{-- Status Change --}}
-            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Change Status</h3>
-                <form method="POST" action="{{ route('projects.update', $project) }}">
-                    @csrf
-                    @method('PATCH')
-                    <select name="status" class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm mb-3">
-                        @foreach(['draft','confirmed','in_production','delayed','finished','delivered'] as $s)
-                            <option value="{{ $s }}" {{ $project->status === $s ? 'selected' : '' }}>
-                                {{ ucfirst(str_replace('_', ' ', $s)) }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <x-primary-button class="w-full justify-center">
-                        Update Status
-                    </x-primary-button>
-                </form>
-            </div>
-
             {{-- Team Members --}}
             <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Team Members</h3>
