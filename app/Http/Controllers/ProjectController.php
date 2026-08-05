@@ -44,10 +44,6 @@ class ProjectController extends Controller
 
         $projects = $query->latest()->paginate($perPage);
 
-        if ($request->ajax()) {
-            return view('projects._list', compact('projects', 'view'));
-        }
-
         // Get data for the "New Project" modal
         $productsList = Product::where('is_active', true)->orderBy('name')->get();
         $clients = Client::where('is_active', true)->orderBy('name')->get();

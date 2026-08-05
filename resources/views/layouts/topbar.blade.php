@@ -114,7 +114,7 @@
                             <!-- Footer -->
                             @if($recentNotifications->count() > 0)
                                 <div class="border-t border-gray-200 dark:border-gray-700">
-                                    <a href="{{ route('notifications.index') }}" class="block px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
+                                    <a href="{{ route('notifications.index') }}" wire:navigate class="block px-4 py-3 text-center text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition">
                                         View All Notifications
                                     </a>
                                 </div>

@@ -63,6 +63,7 @@
 {{-- Main Navigation Items --}}
 @foreach ($navItems as $item)
     <a href="{{ route($item['route']) }}"
+       wire:navigate
        class="flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-150
               {{ $item['active']
                   ? 'bg-gray-900 text-white dark:bg-gray-800 dark:text-white shadow-sm'
@@ -79,6 +80,7 @@
 <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-800">
     @foreach ($adminItems as $item)
         <a href="{{ route($item['route']) }}"
+           wire:navigate
            class="flex items-center px-3 py-3 rounded-lg text-sm font-medium transition-all duration-150
                   {{ $item['active']
                       ? 'bg-gray-900 text-white dark:bg-gray-800 dark:text-white shadow-sm'

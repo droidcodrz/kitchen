@@ -36,7 +36,6 @@
 
     <!-- Main Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div id="projects-filter-region">
         {{-- Status Filter Tabs --}}
         <div class="mb-6">
             <div class="flex items-center gap-2 overflow-x-auto pb-2">
@@ -55,7 +54,7 @@
 
                 @foreach($statuses as $value => $label)
                     <a href="{{ route('projects.index', ['status' => $value]) }}"
-                       data-status-tab="{{ $value }}"
+                       wire:navigate
                        class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
                               {{ $currentStatus === $value
                                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
@@ -66,10 +65,7 @@
             </div>
         </div>
 
-        <div id="projects-list">
-            @include('projects._list')
-        </div>
-        </div>
+        @include('projects._list')
     </div>
 
     {{-- New Project Modal --}}
@@ -256,52 +252,4 @@
             </form>
         </div>
     </x-modal>
-
-    <script>
-    (function () {
-        const region = document.getElementById('projects-filter-region');
-        const list = document.getElementById('projects-list');
-        if (!region || !list) return;
-
-        const activeClasses = ['bg-blue-600', 'text-white', 'border-blue-600', 'shadow-sm'];
-        const inactiveClasses = ['bg-white', 'dark:bg-gray-800', 'text-gray-700', 'dark:text-gray-300', 'border-gray-200', 'dark:border-gray-700', 'hover:bg-gray-50', 'dark:hover:bg-gray-700', 'hover:border-gray-300', 'dark:hover:border-gray-600'];
-
-        function setActiveTab(status) {
-            region.querySelectorAll('[data-status-tab]').forEach(function (tab) {
-                const isActive = tab.dataset.statusTab === status;
-                tab.classList.remove(...activeClasses, ...inactiveClasses);
-                tab.classList.add(...(isActive ? activeClasses : inactiveClasses));
-            });
-        }
-
-        function loadUrl(url, pushState) {
-            fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
-                .then(function (response) { return response.text(); })
-                .then(function (html) {
-                    list.innerHTML = html;
-                    const status = new URL(url, window.location.origin).searchParams.get('status') || '';
-                    setActiveTab(status);
-                    if (pushState) {
-                        window.history.pushState({ projectsUrl: url }, '', url);
-                    }
-                    list.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                })
-                .catch(function () {
-                    window.location.href = url;
-                });
-        }
-
-        region.addEventListener('click', function (e) {
-            const link = e.target.closest('a');
-            if (!link || !region.contains(link)) return;
-            if (link.target === '_blank' || link.hasAttribute('download')) return;
-            e.preventDefault();
-            loadUrl(link.href, true);
-        });
-
-        window.addEventListener('popstate', function (e) {
-            loadUrl((e.state && e.state.projectsUrl) || window.location.href, false);
-        });
-    })();
-    </script>
 </x-app-layout>
