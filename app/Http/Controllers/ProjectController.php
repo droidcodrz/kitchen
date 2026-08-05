@@ -105,6 +105,9 @@ class ProjectController extends Controller
             'members',
             'attachments.uploader',
             'calendarEvents',
+            'activities' => function ($query) {
+                $query->with('user')->latest()->limit(20);
+            },
         ]);
 
         return view('projects.show', compact('project'));

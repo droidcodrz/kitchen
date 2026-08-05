@@ -140,6 +140,48 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No attachments yet.</p>
                 @endif
             </div>
+
+            {{-- Activity --}}
+            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Activity</h3>
+                @if($project->activities->count() > 0)
+                    <ul class="space-y-4">
+                        @foreach($project->activities as $activity)
+                            @php
+                                $changedFields = collect(($activity->properties['new'] ?? []))->keys()
+                                    ->reject(fn ($field) => in_array($field, ['updated_at']));
+                            @endphp
+                            <li class="flex gap-3">
+                                <div class="flex-shrink-0 mt-1">
+                                    <span class="flex h-2.5 w-2.5 rounded-full {{ $activity->action === 'created' ? 'bg-green-500' : ($activity->action === 'deleted' ? 'bg-red-500' : 'bg-indigo-500') }}"></span>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-gray-900 dark:text-gray-100">
+                                        <span class="font-medium">{{ $activity->user->full_name ?? 'System' }}</span>
+                                        @if($activity->action === 'created')
+                                            created this project
+                                        @elseif($activity->action === 'deleted')
+                                            deleted this project
+                                        @elseif($changedFields->contains('status'))
+                                            changed status from
+                                            <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $activity->properties['old']['status'] ?? '')) }}</span>
+                                            to
+                                            <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $activity->properties['new']['status'] ?? '')) }}</span>
+                                        @elseif($changedFields->isNotEmpty())
+                                            updated {{ $changedFields->map(fn ($f) => str_replace('_', ' ', $f))->implode(', ') }}
+                                        @else
+                                            updated this project
+                                        @endif
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $activity->created_at->format('M d, Y g:i A') }}</p>
+                                </div>
+                            </li>
+                        @endforeach
+                    </ul>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No activity recorded yet.</p>
+                @endif
+            </div>
         </div>
 
         {{-- Sidebar --}}
