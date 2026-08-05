@@ -9,5 +9,7 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('inventory:check-low-stock')->hourly();
-// Optional: Run delayed check daily (projects are also checked in real-time)
-// Schedule::command('projects:check-delayed')->daily();
+// Projects are also checked for delayed status in real-time on view/list,
+// this is the reliability net that catches ones nobody happened to open.
+Schedule::command('projects:check-delayed')->daily();
+Schedule::command('projects:check-deadlines')->daily();

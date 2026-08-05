@@ -10,6 +10,8 @@ use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\StorageLocation;
 use App\Models\Vendor;
+use App\Notifications\InventoryItemAddedNotification;
+use App\Services\AlertNotifier;
 use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,7 +20,8 @@ use Illuminate\View\View;
 class InventoryItemController extends Controller
 {
     public function __construct(
-        protected InventoryService $inventoryService
+        protected InventoryService $inventoryService,
+        protected AlertNotifier $alertNotifier
     ) {}
 
     /**
@@ -106,6 +109,11 @@ class InventoryItemController extends Controller
                 }
             }
         }
+
+        $this->alertNotifier->notify(
+            'new_inventory_addition',
+            fn (bool $viaEmail) => new InventoryItemAddedNotification($inventoryItem, $viaEmail)
+        );
 
         return redirect()->route('inventory.index')
             ->with('success', 'Inventory item created successfully.');

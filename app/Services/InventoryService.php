@@ -2,12 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\AlertConfiguration;
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
 use App\Models\Project;
-use App\Models\Role;
-use App\Models\User;
 use App\Notifications\LowStockNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 
 class InventoryService
 {
+    public function __construct(
+        protected AlertNotifier $alertNotifier
+    ) {}
+
     /**
      * Adjust the stock of an inventory item and record a transaction.
      */
@@ -217,35 +218,33 @@ class InventoryService
     }
 
     /**
+     * Check every currently low-stock item and notify relevant users.
+     * Used by the scheduled sweep, in addition to the real-time checks
+     * that run after stock adjustments/consumption above.
+     */
+    public function checkAndNotifyLowStock(): int
+    {
+        $items = $this->getLowStockItems();
+
+        foreach ($items as $item) {
+            $this->notifyLowStock($item);
+        }
+
+        return $items->count();
+    }
+
+    /**
      * Send low stock notifications to relevant users.
      */
     private function notifyLowStock(InventoryItem $item): void
     {
-        $config = AlertConfiguration::where('alert_type', 'low_stock')
-            ->where('is_enabled', true)
-            ->first();
-
-        if (!$config) {
-            return;
-        }
-
-        $usersQuery = User::where('status', 'active');
-        if (!empty($config->notify_roles)) {
-            $roleIds = Role::whereIn('slug', $config->notify_roles)->pluck('id');
-            if ($roleIds->isNotEmpty()) {
-                $usersQuery->whereIn('role_id', $roleIds);
-            }
-        }
-
-        foreach ($usersQuery->get() as $user) {
-            $exists = $user->unreadNotifications()
+        $this->alertNotifier->notify(
+            'low_stock',
+            fn (bool $viaEmail) => new LowStockNotification($item, $viaEmail),
+            fn ($user) => $user->unreadNotifications()
                 ->where('type', LowStockNotification::class)
                 ->whereJsonContains('data->inventory_item_id', $item->id)
-                ->exists();
-
-            if (!$exists) {
-                $user->notify(new LowStockNotification($item));
-            }
-        }
+                ->exists()
+        );
     }
 }
