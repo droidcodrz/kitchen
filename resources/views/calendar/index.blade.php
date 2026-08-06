@@ -104,7 +104,16 @@
             calendar.render();
         }
 
-        document.addEventListener('DOMContentLoaded', initCalendar);
+        // This script runs at the end of the page, by which point
+        // DOMContentLoaded has often already fired - listening for it here
+        // is too late on a genuine first/direct page load, so it only ever
+        // worked via the livewire:navigated event (i.e. only after
+        // navigating in from another page, never on a hard refresh).
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initCalendar);
+        } else {
+            initCalendar();
+        }
         document.addEventListener('livewire:navigated', initCalendar);
     </script>
     @endpush

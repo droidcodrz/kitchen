@@ -326,7 +326,14 @@
             }
         }
 
-        document.addEventListener('DOMContentLoaded', initDashboardChart);
+        // See calendar/index.blade.php for why this checks readyState instead
+        // of only listening for DOMContentLoaded - by the time a script at
+        // the end of the page runs, that event has usually already fired.
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboardChart);
+        } else {
+            initDashboardChart();
+        }
         document.addEventListener('livewire:navigated', initDashboardChart);
     </script>
     @endpush
