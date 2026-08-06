@@ -73,8 +73,13 @@ class ProductController extends Controller
      */
     public function create(): View
     {
-        $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
-        $inventoryItems = InventoryItem::where('is_active', true)->get();
+        // Custom field definitions per category are fetched separately via the
+        // getCustomFields() AJAX endpoint once a category is picked - eager-loading
+        // them here was never read by products/create.blade.php.
+        $categories = Category::where('is_active', true)->get();
+        // Only id/name are ever shown (the Required Materials checklist) - no need
+        // to pull every column (spec fields, stock, timestamps) for every item.
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name']);
         $folders = \App\Models\ProductFolder::orderBy('name')->get();
 
         $dropdownOptions = $this->getDropdownOptions();
@@ -146,8 +151,8 @@ class ProductController extends Controller
     {
         $product->load('requiredMaterials', 'customFieldValues.definition');
 
-        $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
-        $inventoryItems = InventoryItem::where('is_active', true)->get();
+        $categories = Category::where('is_active', true)->get();
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name']);
         $folders = \App\Models\ProductFolder::orderBy('name')->get();
 
         $dropdownOptions = $this->getDropdownOptions();
