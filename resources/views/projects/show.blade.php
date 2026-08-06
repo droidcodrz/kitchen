@@ -219,13 +219,13 @@
                                         </p>
                                     @endif
                                 </div>
-                                <form method="POST" action="{{ route('projects.milestones.destroy', [$project, $milestone]) }}" onsubmit="return confirm('Delete this milestone?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400" title="Delete milestone">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-                                    </button>
-                                </form>
+                                <x-confirm-delete
+                                    :action="route('projects.milestones.destroy', [$project, $milestone])"
+                                    title="Delete Milestone"
+                                    message="Are you sure you want to delete this milestone? This action cannot be undone."
+                                    buttonClass="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </x-confirm-delete>
                             </li>
                         @endforeach
                     </ul>
