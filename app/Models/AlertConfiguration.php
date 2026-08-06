@@ -20,6 +20,7 @@ class AlertConfiguration extends Model
         'is_enabled',
         'notify_roles',
         'notify_via_email',
+        'always_notify_emails',
     ];
 
     /**
@@ -34,6 +35,7 @@ class AlertConfiguration extends Model
             'is_enabled' => 'boolean',
             'notify_roles' => 'array',
             'notify_via_email' => 'boolean',
+            'always_notify_emails' => 'array',
         ];
     }
 }

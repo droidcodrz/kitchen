@@ -33,6 +33,8 @@ class AlertConfigurationController extends Controller
             'notify_via_email' => ['required', 'boolean'],
             'notify_roles' => ['nullable', 'array'],
             'notify_roles.*' => ['exists:roles,slug'],
+            'always_notify_emails' => ['nullable', 'array'],
+            'always_notify_emails.*' => ['email'],
         ]);
 
         $alertConfiguration->update($validated);

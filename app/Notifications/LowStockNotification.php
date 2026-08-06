@@ -19,6 +19,12 @@ class LowStockNotification extends Notification implements ShouldQueue
 
     public function via(object $notifiable): array
     {
+        // An always_notify_emails address isn't a User, so it has nowhere to
+        // store a database notification - mail only for those.
+        if ($notifiable instanceof \Illuminate\Notifications\AnonymousNotifiable) {
+            return ['mail'];
+        }
+
         return array_filter(['database', $this->viaEmail ? 'mail' : null]);
     }
 
