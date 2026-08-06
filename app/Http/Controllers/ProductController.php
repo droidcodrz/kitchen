@@ -28,7 +28,11 @@ class ProductController extends Controller
         $view = session('products_view', 'grid');
         $perPage = $view === 'table' ? 25 : 15;
 
-        $query = Product::with(['category', 'requiredMaterials', 'folder']);
+        // Only 'category' is ever displayed on this list (grid view); 'requiredMaterials'
+        // and 'folder' were being eager-loaded here too but are never accessed by
+        // products/_main.blade.php - that was a many-to-many pivot query and a belongsTo
+        // load, wasted on every product on every page.
+        $query = Product::with('category');
 
         // Filter by folder
         if ($request->has('folder')) {
@@ -47,13 +51,21 @@ class ProductController extends Controller
             ->orderBy('name')
             ->get();
 
+        // The folder sidebar's "All Products" / "Uncategorized" counts used to be two
+        // raw Product::count() queries run directly inside the Blade view, re-executed
+        // on every page load and every AJAX list refresh (e.g. after moving a product
+        // between folders). Compute both here in a single query instead.
+        $productCounts = Product::selectRaw('COUNT(*) as total, SUM(CASE WHEN folder_id IS NULL THEN 1 ELSE 0 END) as uncategorized')->first();
+        $totalProductsCount = (int) $productCounts->total;
+        $uncategorizedProductsCount = (int) $productCounts->uncategorized;
+
         if ($request->ajax()) {
-            return view('products._main', compact('products', 'folders', 'view'));
+            return view('products._main', compact('products', 'folders', 'view', 'totalProductsCount', 'uncategorizedProductsCount'));
         }
 
         $dropdownOptions = $this->getDropdownOptions();
 
-        return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions'));
+        return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions', 'totalProductsCount', 'uncategorizedProductsCount'));
     }
 
     /**

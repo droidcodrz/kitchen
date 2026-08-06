@@ -19,7 +19,7 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                                 All Products
                             </div>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ \App\Models\Product::count() }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $totalProductsCount ?? 0 }}</span>
                         </a>
 
                         <!-- Uncategorized -->
@@ -31,7 +31,7 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
                                 Uncategorized
                             </div>
-                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ \App\Models\Product::whereNull('folder_id')->count() }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">{{ $uncategorizedProductsCount ?? 0 }}</span>
                         </a>
 
                         @foreach($folders ?? [] as $folder)
