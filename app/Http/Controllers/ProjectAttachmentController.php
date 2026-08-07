@@ -7,7 +7,7 @@ use App\Models\Attachment;
 use App\Models\Project;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Storage;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProjectAttachmentController extends Controller
 {
@@ -36,7 +36,7 @@ class ProjectAttachmentController extends Controller
     /**
      * Download the specified attachment.
      */
-    public function download(Project $project, Attachment $attachment): StreamedResponse
+    public function download(Project $project, Attachment $attachment): BinaryFileResponse
     {
         // Ensure the attachment belongs to this project
         if ($attachment->attachable_id !== $project->id || $attachment->attachable_type !== Project::class) {
@@ -49,7 +49,9 @@ class ProjectAttachmentController extends Controller
             abort(404, 'File not found.');
         }
 
-        return $disk->download($attachment->file_path, $attachment->file_name);
+        // Storage::download() streams via fpassthru(), which some hosts (e.g. Cloudways)
+        // disable in php.ini. response()->download() uses readfile() instead, which isn't.
+        return response()->download($disk->path($attachment->file_path), $attachment->file_name);
     }
 
     /**
