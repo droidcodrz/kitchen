@@ -134,7 +134,7 @@ class ProjectService
         // Handle attachments
         if (!empty($data['attachments'])) {
             foreach ($data['attachments'] as $file) {
-                $path = $file->store('project-attachments', 'private');
+                $path = $file->store("project-attachments/{$project->id}", 'private');
 
                 $project->attachments()->create([
                     'file_name' => $file->getClientOriginalName(),
@@ -215,7 +215,7 @@ class ProjectService
         // Handle new attachments
         if (!empty($data['attachments'])) {
             foreach ($data['attachments'] as $file) {
-                $path = $file->store('project-attachments', 'private');
+                $path = $file->store("project-attachments/{$project->id}", 'private');
 
                 $project->attachments()->create([
                     'file_name' => $file->getClientOriginalName(),
