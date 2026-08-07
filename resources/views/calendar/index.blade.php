@@ -17,7 +17,7 @@
     </div>
 
     @push('styles')
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+    {{-- FullCalendar 6.x injects its own CSS via JS - no separate stylesheet ships with it. --}}
     <style>
         /* Dark mode overrides for FullCalendar */
         .dark .fc {
@@ -64,7 +64,11 @@
     @endpush
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+    {{-- Served locally instead of from a CDN - a blocked/unreachable CDN (corporate
+         firewall, ad blocker, flaky network) silently prevented the calendar from
+         ever rendering, with no way to distinguish that from the DOMContentLoaded
+         timing issue fixed above. --}}
+    <script src="{{ asset('vendor/fullcalendar/index.global.min.js') }}"></script>
     <script>
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');

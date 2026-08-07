@@ -239,7 +239,8 @@
     </div>
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    {{-- Served locally instead of from a CDN - see calendar/index.blade.php for why. --}}
+    <script src="{{ asset('vendor/chartjs/chart.umd.js') }}"></script>
     <script>
         function initDashboardChart() {
             const ctx = document.getElementById('analyticsChart');
