@@ -91,7 +91,7 @@
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Material Type <span class="text-red-500">*</span></label>
-                        <select name="material_type" x-model="materialType" @change="updatePreview()" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                        <select name="material_type" x-model="materialType" @change="updatePreview()" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                             <option value="">Select material type</option>
                             @foreach($dropdownOptions['material_types'] as $opt)
                                 <option value="{{ $opt->value }}">{{ $opt->label }}</option>
@@ -142,7 +142,7 @@
                     <div x-data="{ showQuickAdd: false, newCategoryName: '' }">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category <span class="text-red-500">*</span></label>
                         <div class="flex gap-2">
-                            <select name="category_id" id="modal-category-select" x-model="categoryId" @change="loadCustomFields()" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                            <select name="category_id" id="modal-category-select" x-model="categoryId" @change="loadCustomFields()" required class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                 <option value="">Select category</option>
                                 @foreach($categories ?? [] as $category)
                                     <option value="{{ $category->id }}">{{ $category->name }}</option>
