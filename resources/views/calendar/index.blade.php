@@ -6,6 +6,34 @@
                 <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Calendar</h1>
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Project deadlines, deliveries, and scheduled events</p>
             </div>
+
+            <!-- Color Legend -->
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #3b82f6"></span> Confirmed
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #0ea5e9"></span> Design
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #f59e0b"></span> In Production
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #a855f7"></span> Inspection
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #ef4444"></span> Delayed / Overdue
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #10b981"></span> Deadline (upcoming)
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #6366f1"></span> Custom Event
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="w-2.5 h-2.5 rounded-full" style="background-color: #6b7280"></span> Other
+                </span>
+            </div>
         </div>
     </div>
 
