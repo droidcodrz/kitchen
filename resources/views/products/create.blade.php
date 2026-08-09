@@ -28,19 +28,49 @@
         <form method="POST" action="{{ route('products.store') }}" class="p-6 space-y-6">
             @csrf
 
-            {{-- TEST DIAMETER FIELD - TOP OF FORM --}}
+            <!-- {{-- TEST DIAMETER FIELD - TOP OF FORM --}}
             <div style="background: red; color: white; padding: 20px; margin-bottom: 20px; border: 5px solid yellow;">
                 <h1 style="font-size: 24px; font-weight: bold;">TEST: DIAMETER FIELD #1 (TOP)</h1>
                 <label style="font-size: 18px; font-weight: bold;">Diameter (inches):</label>
                 <input type="text" name="diameter_test_1" placeholder="TEST FIELD 1" style="width: 100%; padding: 10px; font-size: 16px; border: 3px solid black;">
                 <p style="margin-top: 10px;">If you see this RED BOX, the file is loading!</p>
+            </div> -->
+
+             {{-- Custom Name / Suffix --}}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+
+                    <x-input-label for="name" :value="__('Custom Name (optional)')" />
+
+                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name')" placeholder="Leave blank to use the auto-generated description" />
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">If entered, this replaces the auto-generated description above.</p>
+
+                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+
+                </div>
+
+                <div>
+
+                    <x-input-label for="name_suffix" :value="__('Name Suffix (optional)')" />
+
+                    <x-text-input id="name_suffix" name="name_suffix" type="text" class="mt-1 block w-full" :value="old('name_suffix')" placeholder="e.g. Type 1, Version A, Brass Handle" />
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Appended to the name to tell near-identical variants apart.</p>
+
+                    <x-input-error :messages="$errors->get('name_suffix')" class="mt-2" />
+
+                </div>
+
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {{-- Row 1: Item Type, Material Type, Material Grade --}}
                 <div>
                     <x-input-label for="item_type" :value="__('Item Type')" />
-                    <select id="item_type" name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="item_type" name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                         <option value="">Select item type</option>
                         @foreach($dropdownOptions['item_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('item_type') === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
@@ -95,13 +125,10 @@
                     <x-input-error :messages="$errors->get('dimension')" class="mt-2" />
                 </div>
 
-                {{-- DIAMETER FIELD - MAIN LOCATION --}}
-                <div style="background: blue; padding: 20px; border: 10px solid orange;">
-                    <label for="diameter" style="color: white; font-size: 20px; font-weight: bold; display: block; margin-bottom: 10px;">
-                        ⭐ DIAMETER (inches) - FIELD #2 ⭐
-                    </label>
-                    <input id="diameter" name="diameter" type="text" placeholder="Enter diameter e.g. 2.5" value="{{ old('diameter') }}" style="width: 100%; padding: 15px; font-size: 18px; border: 5px solid yellow; background: white;">
-                    <p style="color: yellow; font-size: 14px; margin-top: 10px; font-weight: bold;">BLUE BOX = DIAMETER FIELD IS HERE!</p>
+                <div>
+                    <x-input-label for="diameter" :value="__('Diameter (inches)')" />
+                    <x-text-input id="diameter" name="diameter" type="text" class="mt-1 block w-full" :value="old('diameter')" placeholder="e.g. 2.5" />
+                    <x-input-error :messages="$errors->get('diameter')" class="mt-2" />
                 </div>
                 <div>
                     <x-input-label for="category_id" :value="__('Category')" />

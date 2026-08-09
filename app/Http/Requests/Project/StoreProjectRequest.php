@@ -41,16 +41,18 @@ class StoreProjectRequest extends FormRequest
             'production_deadline' => ['nullable', 'date'],
             'description' => ['nullable'],
             'notes' => ['nullable'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['string', 'max:50'],
             'project_manager_id' => ['nullable', 'exists:users,id'],
             'products' => ['nullable', 'array'],
-            'products.*.product_id' => ['required_with:products', 'exists:products,id'],
+            'products.*.product_id' => ['nullable', 'exists:products,id'],
             'products.*.quantity' => ['required_with:products', 'integer', 'min:1'],
             'team_ids' => ['nullable', 'array'],
             'team_ids.*' => ['exists:teams,id'],
             'members' => ['nullable', 'array'],
             'members.*' => ['exists:users,id'],
             'attachments' => ['nullable', 'array'],
-            'attachments.*' => ['file', 'max:10240', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx'],
+            'attachments.*' => ['file', 'max:102400', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx,mp4,mov,avi,webm,mkv'],
         ];
     }
 }

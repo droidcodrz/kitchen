@@ -19,6 +19,8 @@ class AlertConfiguration extends Model
         'threshold_value',
         'is_enabled',
         'notify_roles',
+        'notify_via_email',
+        'always_notify_emails',
     ];
 
     /**
@@ -32,6 +34,8 @@ class AlertConfiguration extends Model
             'threshold_value' => 'decimal:2',
             'is_enabled' => 'boolean',
             'notify_roles' => 'array',
+            'notify_via_email' => 'boolean',
+            'always_notify_emails' => 'array',
         ];
     }
 }

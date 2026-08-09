@@ -24,10 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
 
-        $middleware->alias([
-            'role'       => \App\Http\Middleware\RoleMiddleware::class,
-            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
-        ]);
+                $middleware->alias([
+                'role'       => \App\Http\Middleware\RoleMiddleware::class,
+                'permission' => \App\Http\Middleware\PermissionMiddleware::class,
+                'no-cache'   => \App\Http\Middleware\PreventBackHistoryCache::class,
+            ]);
 
         $middleware->throttleApi('60,1');
     })

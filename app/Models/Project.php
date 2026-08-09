@@ -2,16 +2,18 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasActivityLog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Project extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasActivityLog;
 
     /**
      * The attributes that are mass assignable.
@@ -31,6 +33,7 @@ class Project extends Model
         'actual_delivery_date',
         'description',
         'notes',
+        'labels',
     ];
 
     /**
@@ -45,6 +48,7 @@ class Project extends Model
             'delivery_date' => 'date',
             'production_deadline' => 'date',
             'actual_delivery_date' => 'date',
+            'labels' => 'array',
         ];
     }
 
@@ -106,4 +110,19 @@ class Project extends Model
     {
         return $this->morphMany(CalendarEvent::class, 'eventable');
     }
+
+    /**
+
+     * Get the milestones for this project.
+
+     */
+
+    public function milestones(): HasMany
+
+    {
+
+        return $this->hasMany(ProjectMilestone::class)->orderBy('sort_order')->orderBy('due_date');
+
+    }
+
 }

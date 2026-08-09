@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AlertConfigurationController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\CustomFieldDefinitionController;
 use App\Http\Controllers\Admin\DropdownOptionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\StorageLocationController;
@@ -18,12 +19,13 @@ use App\Http\Controllers\ProductFolderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectAttachmentController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectMilestoneController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TeamController;
 use App\Http\Controllers\TeamMemberController;
 use App\Http\Controllers\TrashController;
-use App\Http\Controllers\Admin\CustomFieldDefinitionController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -44,7 +46,7 @@ Route::get('/', function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', 'no-cache'])->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -72,6 +74,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('projects/{project}/attachments/{attachment}', [ProjectAttachmentController::class, 'destroy'])
         ->name('projects.attachments.destroy');
 
+    Route::post('projects/{project}/milestones', [ProjectMilestoneController::class, 'store'])
+        ->name('projects.milestones.store');
+
+    Route::patch('projects/{project}/milestones/{milestone}', [ProjectMilestoneController::class, 'update'])
+        ->name('projects.milestones.update');
+
+    Route::delete('projects/{project}/milestones/{milestone}', [ProjectMilestoneController::class, 'destroy'])
+        ->name('projects.milestones.destroy');
+
     // Products
     Route::get('products/custom-fields/get', [ProductController::class, 'getCustomFields'])
         ->name('products.custom-fields.get');
@@ -85,10 +96,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('product-folders/move-product', [ProductFolderController::class, 'moveProduct'])
         ->name('product-folders.move-product');
 
-        Route::get('inventory/custom-fields/get', [InventoryItemController::class, 'getCustomFields'])
+    Route::get('inventory/custom-fields/get', [InventoryItemController::class, 'getCustomFields'])
     ->name('inventory.custom-fields.get');
 
     // Inventory
+    Route::get('inventory/custom-fields/get', [InventoryItemController::class, 'getCustomFields'])
+
+        ->name('inventory.custom-fields.get');
     Route::resource('inventory', InventoryItemController::class)
         ->parameters(['inventory' => 'inventory_item']);
     Route::post('inventory/{inventory_item}/adjust-stock', [InventoryItemController::class, 'adjustStock'])
@@ -126,6 +140,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::delete('calendar-events/{calendarEvent}', [CalendarEventController::class, 'destroy'])
             ->name('api.calendar-events.destroy');
     });
+
+    // Reports
+
+    Route::get('reports', [ReportController::class, 'index'])
+        ->name('reports.index');
+
+    Route::get('reports/projects', [ReportController::class, 'projects'])
+        ->name('reports.projects');
+
+    Route::get('reports/inventory', [ReportController::class, 'inventory'])
+        ->name('reports.inventory');
 
     // Settings
     Route::get('settings', [SettingsController::class, 'index'])
@@ -179,6 +204,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::patch('alert-configurations/{alertConfiguration}', [AlertConfigurationController::class, 'update'])
             ->name('alert-configurations.update');
 
+        // Custom Field Definitions
         Route::resource('custom-field-definitions', CustomFieldDefinitionController::class);
     });
 });

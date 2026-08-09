@@ -29,11 +29,41 @@
             @csrf
             @method('PATCH')
 
+             {{-- Custom Name / Suffix --}}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <div>
+
+                    <x-input-label for="name" :value="__('Custom Name (optional)')" />
+
+                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $product->name)" placeholder="Leave blank to use the auto-generated description" />
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">If entered, this replaces the auto-generated description above.</p>
+
+                    <x-input-error :messages="$errors->get('name')" class="mt-2" />
+
+                </div>
+
+                <div>
+
+                    <x-input-label for="name_suffix" :value="__('Add More to Name (optional)')" />
+
+                    <x-text-input id="name_suffix" name="name_suffix" type="text" class="mt-1 block w-full" :value="old('name_suffix')" placeholder="e.g. Type 1, Version A, Brass Handle" />
+
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Appended to the name above when saved.</p>
+
+                    <x-input-error :messages="$errors->get('name_suffix')" class="mt-2" />
+
+                </div>
+
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {{-- Row 1: Item Type, Material Type, Material Grade --}}
                 <div>
                     <x-input-label for="item_type" :value="__('Item Type')" />
-                    <select id="item_type" name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="item_type" name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                         <option value="">Select item type</option>
                         @foreach($dropdownOptions['item_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('item_type', $product->item_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
@@ -44,7 +74,7 @@
 
                 <div>
                     <x-input-label for="material_type" :value="__('Material Type')" />
-                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select material type</option>
                         @foreach($dropdownOptions['material_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('material_type', $product->material_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
@@ -98,7 +128,7 @@
                 {{-- Row 3 continued: Category, Inventory Type, Folder --}}
                 <div>
                     <x-input-label for="category_id" :value="__('Category')" />
-                    <select id="category_id" name="category_id" x-model="categoryId" @change="loadCustomFields()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="category_id" name="category_id" x-model="categoryId" @change="loadCustomFields()" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select Category</option>
                         @foreach($categories ?? [] as $category)
                             <option value="{{ $category->id }}" {{ old('category_id', $product->category_id) == $category->id ? 'selected' : '' }}>

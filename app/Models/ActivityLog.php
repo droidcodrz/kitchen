@@ -52,6 +52,7 @@ class ActivityLog extends Model
     {
         return [
             'properties' => 'array',
+            'created_at' => 'datetime',
         ];
     }
 

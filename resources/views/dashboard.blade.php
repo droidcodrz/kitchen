@@ -239,11 +239,22 @@
     </div>
 
     @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script> -->
+     <script src="{{ asset('vendor/chartjs/chart.umd.js') }}"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        function initDashboardChart() {
             const ctx = document.getElementById('analyticsChart');
             if (ctx) {
+                                if (typeof Chart === 'undefined') {
+                    setTimeout(initDashboardChart, 50);
+                    return;
+                }
+
+                const existingChart = Chart.getChart(ctx);
+                if (existingChart) {
+                    existingChart.destroy();
+                }
+
                 const isDark = document.documentElement.classList.contains('dark') ||
                                localStorage.getItem('darkMode') === 'true';
 
@@ -319,7 +330,15 @@
                     }
                 });
             }
-        });
+        }
+
+        // document.addEventListener('DOMContentLoaded', initDashboardChart);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDashboardChart);
+        } else {
+            initDashboardChart();
+        }
+        document.addEventListener('livewire:navigated', initDashboardChart);
     </script>
     @endpush
 </x-app-layout>

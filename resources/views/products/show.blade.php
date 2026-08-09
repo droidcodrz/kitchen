@@ -96,6 +96,12 @@
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Sale Price</dt>
                         <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $product->unit_sale_price ? '$' . number_format($product->unit_sale_price, 2) : '—' }}</dd>
                     </div>
+                    @if($product->diameter)
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Diameter (inches)</dt>
+                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">{{ $product->diameter }}</dd>
+                    </div>
+                    @endif
                     <div>
                         <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</dt>
                         <dd class="mt-1"><x-status-badge :status="$product->is_active ? 'active' : 'inactive'" /></dd>
@@ -111,6 +117,28 @@
                         </div>
                     @endif
                 </dl>
+
+                @if($product->customFieldValues->isNotEmpty())
+                    <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                        <h4 class="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-3">Additional Fields</h4>
+                        <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                            @foreach($product->customFieldValues as $fieldValue)
+                                @if($fieldValue->definition)
+                                    <div>
+                                        <dt class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ $fieldValue->definition->field_label }}</dt>
+                                        <dd class="mt-1 text-sm text-gray-900 dark:text-gray-100">
+                                            @if($fieldValue->definition->field_type === 'boolean')
+                                                {{ $fieldValue->value ? 'Yes' : 'No' }}
+                                            @else
+                                                {{ $fieldValue->value ?: '—' }}
+                                            @endif
+                                        </dd>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </dl>
+                    </div>
+                @endif
             </div>
 
             {{-- Projects using this product --}}
@@ -145,12 +173,24 @@
                                 <div>
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ $material->name }}</p>
                                     <p class="text-xs text-gray-500 dark:text-gray-400">{{ $material->sku }}</p>
+                                      @if($material->pivot->quantity_required)
+
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Needs {{ number_format($material->pivot->quantity_required, 2) }} {{ $material->unit_of_measure }} per unit</p>
+
+                                    @endif
+
                                 </div>
-                                @if($material->is_low_stock)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Low Stock</span>
-                                @else
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $material->stock_quantity }} {{ $material->unit_of_measure }}</span>
-                                @endif
+
+                                <div class="text-right">
+
+                                    @if($material->is_low_stock)
+
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300">Low Stock</span>
+
+                                    @endif
+
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ number_format($material->available_quantity, 0) }} {{ $material->unit_of_measure }} available</p>
+                                </div>
                             </a>
                         @endforeach
                     </div>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DropdownOption;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,6 +21,14 @@ class DropdownOptionController extends Controller
             ->paginate(25)
             ->withQueryString();
 
+        if ($request->ajax()) {
+            return view('admin.dropdown-options._list', [
+                'options' => $options,
+                'types' => DropdownOption::TYPES,
+                'currentType' => $currentType,
+            ]);
+        }
+
         return view('admin.dropdown-options.index', [
             'options' => $options,
             'types' => DropdownOption::TYPES,
@@ -27,7 +36,7 @@ class DropdownOptionController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'type' => ['required', 'in:' . implode(',', array_keys(DropdownOption::TYPES))],
@@ -44,6 +53,10 @@ class DropdownOptionController extends Controller
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
         if (DropdownOption::where('type', $validated['type'])->where('value', $validated['value'])->exists()) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'This value already exists for the selected type.'], 422);
+            }
+
             return redirect()
                 ->route('admin.dropdown-options.index', ['type' => $validated['type']])
                 ->with('error', 'This value already exists for the selected type.');
@@ -51,12 +64,16 @@ class DropdownOptionController extends Controller
 
         DropdownOption::create($validated);
 
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Option added successfully.']);
+        }
+
         return redirect()
             ->route('admin.dropdown-options.index', ['type' => $validated['type']])
             ->with('success', 'Option added successfully.');
     }
 
-    public function update(Request $request, DropdownOption $dropdownOption): RedirectResponse
+    public function update(Request $request, DropdownOption $dropdownOption): RedirectResponse|JsonResponse
     {
         $validated = $request->validate([
             'value' => ['required', 'max:191'],
@@ -79,12 +96,20 @@ class DropdownOptionController extends Controller
             ->exists();
 
         if ($duplicate) {
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'This value already exists.'], 422);
+            }
+
             return redirect()
                 ->route('admin.dropdown-options.index', ['type' => $dropdownOption->type])
                 ->with('error', 'This value already exists.');
         }
 
         $dropdownOption->update($validated);
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Option updated successfully.']);
+        }
 
         return redirect()
             ->route('admin.dropdown-options.index', ['type' => $dropdownOption->type])

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\View\View;
@@ -38,7 +39,7 @@ class UserController extends Controller
     /**
      * Store a newly created user.
      */
-    public function store(StoreUserRequest $request): RedirectResponse
+    public function store(StoreUserRequest $request): RedirectResponse|JsonResponse
     {
         $data = $request->validated();
         $data['password'] = Hash::make($data['password']);
@@ -50,8 +51,16 @@ class UserController extends Controller
         if ($teamId) {
             $user->teams()->attach($teamId, ['joined_at' => now()]);
 
+            if ($request->wantsJson()) {
+                return response()->json(['message' => 'Team member added successfully.']);
+            }
+
             return redirect()->route('teams.index')
                 ->with('success', 'Team member added successfully.');
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'User created successfully.']);
         }
 
         return redirect()->route('admin.users.index')

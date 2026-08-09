@@ -87,6 +87,13 @@ class CategorySeeder extends Seeder
                 'sort_order' => 13,
                 'is_active' => true,
             ],
+            [
+                'name' => 'Food Preparation',
+                'slug' => 'food-preparation',
+                'description' => 'Mixers, food processors, and other food prep equipment',
+                'sort_order' => 14,
+                'is_active' => true,
+            ],
         ];
 
         foreach ($categories as $category) {

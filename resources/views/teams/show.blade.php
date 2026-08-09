@@ -34,7 +34,7 @@
                     <div class="flex items-end gap-3">
                         <div class="flex-1">
                             <x-input-label for="user_id" :value="__('Add Member')" />
-                            <select id="user_id" name="user_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                            <select id="user_id" name="user_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                                 <option value="">Select User</option>
                                 @foreach($availableUsers ?? [] as $user)
                                     <option value="{{ $user->id }}">{{ $user->full_name }}</option>

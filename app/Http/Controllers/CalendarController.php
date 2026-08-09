@@ -42,6 +42,8 @@ class CalendarController extends Controller
                     'color' => match ($project->status) {
                         'delayed' => '#ef4444',
                         'in_production' => '#f59e0b',
+                        'inspection' => '#a855f7',
+                        'design' => '#0ea5e9',
                         'confirmed' => '#3b82f6',
                         default => '#6b7280',
                     },
@@ -60,7 +62,7 @@ class CalendarController extends Controller
                     'title' => $project->name . ' - Production Deadline',
                     'start' => $project->production_deadline->toIso8601String(),
                     'end' => null,
-                    'color' => '#10b981',
+                    'color' => $project->production_deadline->isPast() ? '#ef4444' : '#10b981',
                     'all_day' => true,
                     'url' => route('projects.show', $project),
                 ];

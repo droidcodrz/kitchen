@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Project;
-use Carbon\Carbon;
+use App\Services\ProjectService;
 use Illuminate\Console\Command;
 
 class CheckDelayedProjects extends Command
@@ -25,23 +24,9 @@ class CheckDelayedProjects extends Command
     /**
      * Execute the console command.
      */
-    public function handle(): int
+    public function handle(ProjectService $projectService): int
     {
-        $today = Carbon::today();
-
-        // Find projects that should be marked as delayed
-        $projects = Project::whereIn('status', ['confirmed', 'in_production'])
-            ->whereNotNull('delivery_date')
-            ->where('delivery_date', '<', $today)
-            ->get();
-
-        $count = 0;
-
-        foreach ($projects as $project) {
-            $project->update(['status' => 'delayed']);
-            $count++;
-            $this->info("Project #{$project->order_no} ({$project->name}) marked as delayed");
-        }
+         $count = $projectService->checkAllDelayedProjects();
 
         if ($count === 0) {
             $this->info('No projects to mark as delayed.');

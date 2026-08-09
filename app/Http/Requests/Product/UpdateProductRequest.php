@@ -36,6 +36,7 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'name' => ['nullable', 'max:191'],
+            'name_suffix' => ['nullable', 'max:100'],
             'sku' => ['nullable', 'unique:products,sku,' . $productId, 'max:100'],
             'category_id' => ['required', 'exists:categories,id'],
             'folder_id' => ['nullable', 'exists:product_folders,id'],
@@ -47,6 +48,7 @@ class UpdateProductRequest extends FormRequest
             'thickness_gauge' => ['nullable', 'max:50'],
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],
             'dimension' => ['nullable', 'max:50'],
+            'diameter' => ['nullable', 'max:50'],
             'unit_price' => ['required', 'numeric', 'min:0'],
             'unit_sale_price' => ['nullable', 'numeric', 'min:0'],
             'description' => ['nullable'],

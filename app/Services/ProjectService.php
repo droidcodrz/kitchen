@@ -3,14 +3,18 @@
 namespace App\Services;
 
 use App\Models\Project;
+use App\Notifications\ProjectDelayedNotification;
+use App\Notifications\ProjectStatusChangedNotification;
 use Carbon\Carbon;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class ProjectService
 {
     public function __construct(
-        protected InventoryService $inventoryService
+        protected InventoryService $inventoryService,
+        protected AlertNotifier $alertNotifier
     ) {}
 
 
@@ -71,8 +75,18 @@ class ProjectService
         if ($newStatus === 'in_production') {
             $this->inventoryService->consumeForProject($project);
         }
-
+        $fromStatus = $project->status;
         $project->update(['status' => $newStatus]);
+
+          if ($newStatus === 'delayed') {
+
+            $this->notifyDelayed($project);
+
+        } else {
+
+            $this->notifyWatchers($project, new ProjectStatusChangedNotification($project, $fromStatus, $newStatus));
+
+        }
 
         return $project->fresh();
     }
@@ -124,7 +138,8 @@ class ProjectService
         // Handle attachments
         if (!empty($data['attachments'])) {
             foreach ($data['attachments'] as $file) {
-                $path = $file->store('project-attachments', 'private');
+                // $path = $file->store('project-attachments', 'private');
+                 $path = $file->store("project-attachments/{$project->id}", 'private');
 
                 $project->attachments()->create([
                     'file_name' => $file->getClientOriginalName(),
@@ -205,7 +220,8 @@ class ProjectService
         // Handle new attachments
         if (!empty($data['attachments'])) {
             foreach ($data['attachments'] as $file) {
-                $path = $file->store('project-attachments', 'private');
+                // $path = $file->store('project-attachments', 'private');
+                 $path = $file->store("project-attachments/{$project->id}", 'private');
 
                 $project->attachments()->create([
                     'file_name' => $file->getClientOriginalName(),
@@ -226,14 +242,17 @@ class ProjectService
      */
     public function checkAndMarkDelayed(Project $project): bool
     {
-        // Only check projects that are in confirmed or in_production status
-        if (!in_array($project->status, ['confirmed', 'in_production'])) {
+        // // Only check projects that are in confirmed or in_production status
+        // if (!in_array($project->status, ['confirmed', 'in_production'])) {
+        // Only check projects that are actively in progress
+        if (!in_array($project->status, ['confirmed', 'design', 'in_production', 'inspection'])) {
             return false;
         }
 
         // Check if delivery date exists and has passed
         if ($project->delivery_date && $project->delivery_date->isPast()) {
             $project->update(['status' => 'delayed']);
+             $this->notifyDelayed($project);
             return true;
         }
 
@@ -241,13 +260,78 @@ class ProjectService
     }
 
     /**
-     * Check all active projects and mark delayed ones.
+     * Check all active projects and mark delayed ones, notifying watchers for each.
      */
     public function checkAllDelayedProjects(): int
     {
-        return Project::whereIn('status', ['confirmed', 'in_production'])
-        ->whereNotNull('delivery_date')
-        ->where('delivery_date', '<', Carbon::today())
-        ->update(['status' => 'delayed']);
+         $projects = Project::whereIn('status', ['confirmed', 'design', 'in_production', 'inspection'])
+            ->whereNotNull('delivery_date')
+            ->where('delivery_date', '<', Carbon::today())
+            ->get();
+         foreach ($projects as $project) {
+
+            $project->update(['status' => 'delayed']);
+
+
+            $this->notifyDelayed($project);
+
+        }
+         return $projects->count();
+    }
+    /**
+
+     * Notify configured roles that a project was marked delayed.
+
+     */
+
+    private function notifyDelayed(Project $project): void
+
+    {
+
+        $this->alertNotifier->notify(
+
+            'project_delayed',
+
+            fn (bool $viaEmail) => new ProjectDelayedNotification($project, $viaEmail),
+
+            fn ($user) => $user->unreadNotifications()
+
+                ->where('type', ProjectDelayedNotification::class)
+
+                ->whereJsonContains('data->project_id', $project->id)
+
+                ->exists()
+
+        );
+
+    }
+
+ 
+
+    /**
+
+     * Notify a project's manager and assigned members.
+
+     */
+
+    private function notifyWatchers(Project $project, Notification $notification): void
+
+    {
+
+        $recipients = collect([$project->projectManager])
+
+            ->merge($project->members)
+
+            ->filter()
+
+            ->unique('id');
+
+ 
+
+        foreach ($recipients as $user) {
+
+            $user->notify($notification);
+
+        }
     }
 }

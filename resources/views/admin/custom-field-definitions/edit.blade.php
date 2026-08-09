@@ -23,7 +23,7 @@
                 </div>
 
                 <div>
-                    <x-input-label for="category_id" :value="__('Category (optional)')" />
+                    <x-input-label for="category_id" :value="__('Category')" />
                     <select id="category_id" name="category_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">All categories</option>
                         @foreach($categories ?? [] as $category)

@@ -102,7 +102,7 @@ class TeamSeeder extends Seeder
 
         $createdUsers = [];
         foreach ($users as $userData) {
-            $createdUsers[] = User::create($userData);
+            $createdUsers[] = User::firstOrCreate(['email' => $userData['email']], $userData);
         }
 
         // Create teams
@@ -141,12 +141,12 @@ class TeamSeeder extends Seeder
             $memberIds = $teamData['member_ids'];
             unset($teamData['member_ids']);
 
-            $team = Team::create($teamData);
+            $team = Team::firstOrCreate(['slug' => $teamData['slug']], $teamData);
 
             // Attach members to team
             foreach ($memberIds as $index) {
                 if (isset($createdUsers[$index])) {
-                    $team->users()->attach($createdUsers[$index]->id);
+                    $team->users()->syncWithoutDetaching([$createdUsers[$index]->id]);
                 }
             }
         }

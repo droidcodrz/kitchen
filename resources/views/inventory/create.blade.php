@@ -48,7 +48,7 @@
                 {{-- Row 1: Item Type Label, Material Type, Material Grade --}}
                 <div>
                     <x-input-label for="item_type_label" :value="__('Item Type')" />
-                    <select id="item_type_label" name="item_type_label" x-model="itemTypeLabel" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="item_type_label" name="item_type_label" x-model="itemTypeLabel" @change="updatePreview()" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select item type</option>
                         @foreach($dropdownOptions['item_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('item_type_label') === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>

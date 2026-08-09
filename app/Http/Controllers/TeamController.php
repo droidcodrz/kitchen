@@ -4,10 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Team\StoreTeamRequest;
 use App\Http\Requests\Team\UpdateTeamRequest;
+use App\Models\Role;
 use App\Models\Team;
 use App\Models\User;
-use App\Models\Role;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -16,16 +17,20 @@ class TeamController extends Controller
     /**
      * Display a listing of teams.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
         $teams = Team::with(['users.role', 'projects'])
-                ->withCount(['users', 'projects'])
-                ->latest()
-                ->paginate(15);
+            ->withCount(['users', 'projects'])
+            ->latest()
+            ->paginate(15);
 
-            $roles = Role::all();
+        $roles = Role::all();
 
-return view('teams.index', compact('teams', 'roles'));
+        if ($request->ajax()) {
+            return view('teams._list', compact('teams'));
+        }
+
+        return view('teams.index', compact('teams', 'roles'));
     }
 
     /**

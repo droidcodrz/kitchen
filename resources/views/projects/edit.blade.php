@@ -27,7 +27,7 @@
 
                     <div>
                         <x-input-label for="client_id" :value="__('Client')" />
-                        <select id="client_id" name="client_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                        <select id="client_id" name="client_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                             <option value="">Select Client</option>
                             @foreach($clients ?? [] as $client)
                                 <option value="{{ $client->id }}" {{ old('client_id', $project->client_id) == $client->id ? 'selected' : '' }}>
@@ -235,6 +235,46 @@
                 <x-input-label for="notes" :value="__('Notes')" />
                 <textarea id="notes" name="notes" rows="3" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">{{ old('notes', $project->notes) }}</textarea>
                 <x-input-error :messages="$errors->get('notes')" class="mt-2" />
+            </div>
+
+            {{-- Internal Labels --}}
+
+            <div x-data="{ labels: {{ json_encode(old('labels', $project->labels ?? [])) }}, newLabel: '' }">
+
+                <x-input-label value="Internal Labels" />
+
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">For internal categorization only (e.g. Rush Order, VIP Client) - not shown to clients.</p>
+
+                <div class="flex flex-wrap gap-2 mb-2" x-show="labels.length">
+
+                    <template x-for="(label, index) in labels" :key="index">
+
+                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-full">
+
+                            <span x-text="label"></span>
+
+                            <button type="button" @click="labels.splice(index, 1)" class="text-gray-400 hover:text-red-500">&times;</button>
+
+                            <input type="hidden" name="labels[]" :value="label">
+
+                        </span>
+
+                    </template>
+
+                </div>
+
+                <input type="text" x-model="newLabel"
+
+                    @keydown.enter.prevent="if (newLabel.trim()) { labels.push(newLabel.trim()); newLabel = ''; }"
+
+                    @keydown.comma.prevent="if (newLabel.trim()) { labels.push(newLabel.trim()); newLabel = ''; }"
+
+                    placeholder="Type a label and press Enter"
+
+                    class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+
+                <x-input-error :messages="$errors->get('labels')" class="mt-2" />
+
             </div>
 
             {{-- Actions --}}

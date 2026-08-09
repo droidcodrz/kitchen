@@ -6,15 +6,25 @@ use App\Models\InventoryItem;
 use App\Models\Project;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 
 class DashboardService
 {
+    /**
+     * Get a database-portable SQL expression that extracts the month as an integer.
+     */
+    private function monthExpression(): string
+    {
+        return Schema::getConnection()->getDriverName() === 'sqlite'
+            ? "CAST(strftime('%m', created_at) AS INTEGER)"
+            : 'MONTH(created_at)';
+    }
     /**
      * Get dashboard statistics.
      */
     public function getStats(): array
     {
-        $activeProjects = Project::whereIn('status', ['confirmed', 'in_production'])->count();
+        $activeProjects = Project::whereIn('status', ['confirmed', 'design', 'in_production', 'inspection'])->count();
 
         $delayedProjects = Project::where('status', 'delayed')->count();
 
@@ -40,7 +50,7 @@ class DashboardService
      */
     public function getChartData(int $year): array
     {
-        $monthlyData = Project::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+        $monthlyData = Project::selectRaw($this->monthExpression() . ' as month, COUNT(*) as count')
             ->whereYear('created_at', $year)
             ->groupBy('month')
             ->orderBy('month')
@@ -63,7 +73,7 @@ class DashboardService
      */
     public function getMonthlyAnalytics(int $year): Collection
     {
-        return Project::selectRaw('MONTH(created_at) as month, status, COUNT(*) as count')
+        return Project::selectRaw($this->monthExpression() . ' as month, status, COUNT(*) as count')
             ->whereYear('created_at', $year)
             ->groupBy('month', 'status')
             ->orderBy('month')

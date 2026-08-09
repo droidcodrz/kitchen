@@ -45,7 +45,7 @@ class VendorSeeder extends Seeder
         ];
 
         foreach ($vendors as $vendor) {
-            Vendor::create($vendor);
+            Vendor::firstOrCreate(['email' => $vendor['email']], $vendor);
         }
     }
 }

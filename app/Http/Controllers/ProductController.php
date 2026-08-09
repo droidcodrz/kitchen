@@ -28,7 +28,8 @@ class ProductController extends Controller
         $view = session('products_view', 'grid');
         $perPage = $view === 'table' ? 25 : 15;
 
-        $query = Product::with(['category', 'requiredMaterials', 'folder']);
+        // $query = Product::with(['category', 'requiredMaterials', 'folder']);
+        $query = Product::with('category');
 
         // Filter by folder
         if ($request->has('folder')) {
@@ -47,9 +48,25 @@ class ProductController extends Controller
             ->orderBy('name')
             ->get();
 
-        $dropdownOptions = $this->getDropdownOptions();
+            $productCounts = Product::selectRaw('COUNT(*) as total, SUM(CASE WHEN folder_id IS NULL THEN 1 ELSE 0 END) as uncategorized')->first();
+            $totalProductsCount = (int) $productCounts->total;
+            $uncategorizedProductsCount = (int) $productCounts->uncategorized;
 
-        return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions'));
+            if ($request->ajax()) {
+                return view('products._main', compact('products', 'folders', 'view', 'totalProductsCount', 'uncategorizedProductsCount'));
+            }
+
+            $dropdownOptions = $this->getDropdownOptions();
+
+            return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions', 'totalProductsCount', 'uncategorizedProductsCount'));
+
+        // if ($request->ajax()) {
+        //     return view('products._main', compact('products', 'folders', 'view'));
+        // }
+
+        // $dropdownOptions = $this->getDropdownOptions();
+
+        // return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions'));
     }
 
     /**
@@ -57,8 +74,10 @@ class ProductController extends Controller
      */
     public function create(): View
     {
-        $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
-        $inventoryItems = InventoryItem::where('is_active', true)->get();
+        // $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
+        // $inventoryItems = InventoryItem::where('is_active', true)->get();
+        $categories = Category::where('is_active', true)->get();
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name']);
         $folders = \App\Models\ProductFolder::orderBy('name')->get();
 
         $dropdownOptions = $this->getDropdownOptions();
@@ -78,6 +97,11 @@ class ProductController extends Controller
         if (empty($data['name'])) {
             $data['name'] = Product::generateDescription($data);
         }
+
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
 
         $data['slug'] = Str::slug($data['name']);
 
@@ -113,7 +137,7 @@ class ProductController extends Controller
      */
     public function show(Product $product): View
     {
-        $product->load(['category', 'requiredMaterials.vendor', 'projects']);
+        $product->load(['category', 'requiredMaterials.vendor', 'projects', 'customFieldValues.definition']);
 
         return view('products.show', compact('product'));
     }
@@ -125,8 +149,10 @@ class ProductController extends Controller
     {
         $product->load('requiredMaterials', 'customFieldValues.definition');
 
-        $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
-        $inventoryItems = InventoryItem::where('is_active', true)->get();
+        // $categories = Category::with('customFieldDefinitions')->where('is_active', true)->get();
+        // $inventoryItems = InventoryItem::where('is_active', true)->get();
+        $categories = Category::where('is_active', true)->get();
+$inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name']);
         $folders = \App\Models\ProductFolder::orderBy('name')->get();
 
         $dropdownOptions = $this->getDropdownOptions();
@@ -146,6 +172,11 @@ class ProductController extends Controller
         if (empty($data['name'])) {
             $data['name'] = Product::generateDescription($data);
         }
+
+        if (!empty($data['name_suffix'])) {
+            $data['name'] .= ' - ' . $data['name_suffix'];
+        }
+        unset($data['name_suffix']);
 
         $data['slug'] = Str::slug($data['name']);
 
@@ -225,9 +256,12 @@ class ProductController extends Controller
             return response()->json(['fields' => []]);
         }
 
-        $query = \App\Models\CustomFieldDefinition::where('category_id', $categoryId)
-            ->where('entity_type', 'product')
+        $query = \App\Models\CustomFieldDefinition::where('entity_type', 'product')
             ->where('is_active', true)
+            ->where(function ($q) use ($categoryId) {
+                $q->where('category_id', $categoryId)
+                    ->orWhereNull('category_id');
+            })
             ->orderBy('sort_order')
             ->orderBy('field_label');
 

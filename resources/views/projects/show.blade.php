@@ -10,6 +10,19 @@
                         {{ $project->name }}
                     </h2>
                     <p class="text-sm text-gray-500 dark:text-gray-400">Order #{{ $project->order_no }}</p>
+                     @if(!empty($project->labels))
+
+                        <div class="flex flex-wrap gap-1 mt-1">
+
+                            @foreach($project->labels as $label)
+
+                                <span class="inline-flex items-center px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs rounded-full">{{ $label }}</span>
+
+                            @endforeach
+
+                        </div>
+
+                    @endif
                 </div>
             </div>
             <div class="flex items-center space-x-3">
@@ -140,13 +153,94 @@
                     <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No attachments yet.</p>
                 @endif
             </div>
+            {{-- Activity --}}
+
+            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
+
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Activity</h3>
+
+                @if($project->activities->count() > 0)
+
+                    <ul class="space-y-4">
+
+                        @foreach($project->activities as $activity)
+
+                            @php
+
+                                $changedFields = collect(($activity->properties['new'] ?? []))->keys()
+
+                                    ->reject(fn ($field) => in_array($field, ['updated_at']));
+
+                            @endphp
+
+                            <li class="flex gap-3">
+
+                                <div class="flex-shrink-0 mt-1">
+
+                                    <span class="flex h-2.5 w-2.5 rounded-full {{ $activity->action === 'created' ? 'bg-green-500' : ($activity->action === 'deleted' ? 'bg-red-500' : 'bg-indigo-500') }}"></span>
+
+                                </div>
+
+                                <div class="flex-1 min-w-0">
+
+                                    <p class="text-sm text-gray-900 dark:text-gray-100">
+
+                                        <span class="font-medium">{{ $activity->user->full_name ?? 'System' }}</span>
+
+                                        @if($activity->action === 'created')
+
+                                            created this project
+
+                                        @elseif($activity->action === 'deleted')
+
+                                            deleted this project
+
+                                        @elseif($changedFields->contains('status'))
+
+                                            changed status from
+
+                                            <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $activity->properties['old']['status'] ?? '')) }}</span>
+
+                                            to
+
+                                            <span class="font-medium">{{ ucfirst(str_replace('_', ' ', $activity->properties['new']['status'] ?? '')) }}</span>
+
+                                        @elseif($changedFields->isNotEmpty())
+
+                                            updated {{ $changedFields->map(fn ($f) => str_replace('_', ' ', $f))->implode(', ') }}
+
+                                        @else
+
+                                            updated this project
+
+                                        @endif
+
+                                    </p>
+
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ $activity->created_at->format('M d, Y g:i A') }}</p>
+
+                                </div>
+
+                            </li>
+
+                        @endforeach
+
+                    </ul>
+
+                @else
+
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No activity recorded yet.</p>
+
+                @endif
+
+            </div>
         </div>
 
-        {{-- Sidebar --}}
+        {{-- Milestones --}}
         <div class="space-y-6">
             {{-- Status Change --}}
             <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Change Status</h3>
+                <!-- <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Change Status</h3>
                 <form method="POST" action="{{ route('projects.update', $project) }}">
                     @csrf
                     @method('PATCH')
@@ -160,6 +254,86 @@
                     <x-primary-button class="w-full justify-center">
                         Update Status
                     </x-primary-button>
+                </form> -->
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Milestones</h3>
+
+ 
+
+                @if($project->milestones->count() > 0)
+
+                    <ul class="space-y-3 mb-4">
+
+                        @foreach($project->milestones as $milestone)
+
+                            <li class="flex items-start gap-3">
+
+                                <form method="POST" action="{{ route('projects.milestones.update', [$project, $milestone]) }}" class="mt-0.5">
+
+                                    @csrf
+
+                                    @method('PATCH')
+
+                                    <input type="hidden" name="toggle_complete" value="1">
+
+                                    <button type="submit" class="flex-shrink-0 w-4 h-4 rounded border-2 flex items-center justify-center {{ $milestone->is_complete ? 'bg-green-500 border-green-500' : 'border-gray-300 dark:border-gray-600' }}" title="{{ $milestone->is_complete ? 'Mark as not complete' : 'Mark as complete' }}">
+
+                                        @if($milestone->is_complete)
+
+                                            <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+
+                                        @endif
+
+                                    </button>
+
+                                </form>
+
+                                <div class="flex-1 min-w-0">
+
+                                    <p class="text-sm {{ $milestone->is_complete ? 'text-gray-400 dark:text-gray-500 line-through' : 'text-gray-900 dark:text-gray-100' }}">{{ $milestone->title }}</p>
+
+                                    @if($milestone->due_date)
+
+                                        <p class="text-xs {{ $milestone->is_overdue ? 'text-red-500' : 'text-gray-500 dark:text-gray-400' }}">
+
+                                            Due {{ $milestone->due_date->format('M d, Y') }}{{ $milestone->is_overdue ? ' (overdue)' : '' }}
+
+                                        </p>
+
+                                    @endif
+
+                                </div>
+
+                               <x-confirm-delete
+                                :action="route('projects.milestones.destroy', [$project, $milestone])"
+                                title="Delete Milestone"
+                                message="Are you sure you want to delete this milestone? This action cannot be undone."
+                                buttonClass="text-gray-300 hover:text-red-500 dark:text-gray-600 dark:hover:text-red-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </x-confirm-delete>
+
+                            </li>
+
+                        @endforeach
+                    </ul>
+                    @else
+
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2 mb-4">No milestones yet.</p>
+
+                @endif
+                 <form method="POST" action="{{ route('projects.milestones.store', $project) }}" class="flex gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+
+                    @csrf
+
+                    <input type="text" name="title" required placeholder="Add a milestone..." class="flex-1 min-w-0 text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+
+                    <input type="date" name="due_date" class="text-sm border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+
+                    <button type="submit" class="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md">
+
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+
+                    </button>
+
                 </form>
             </div>
 
