@@ -73,6 +73,16 @@
         function initCalendar() {
             const calendarEl = document.getElementById('calendar');
             if (!calendarEl || calendarEl.dataset.calendarInitialized) return;
+
+            // wire:navigate injects this page's <script src> tags dynamically,
+            // and dynamically-injected scripts load/execute asynchronously - so
+            // livewire:navigated can fire before FullCalendar has actually
+            // finished loading. Wait for it instead of assuming it's ready.
+            if (typeof FullCalendar === 'undefined') {
+                setTimeout(initCalendar, 50);
+                return;
+            }
+
             calendarEl.dataset.calendarInitialized = '1';
 
             const events = @json($events ?? []);

@@ -245,7 +245,16 @@
         function initDashboardChart() {
             const ctx = document.getElementById('analyticsChart');
             if (ctx) {
-                const existingChart = typeof Chart !== 'undefined' && Chart.getChart(ctx);
+                // wire:navigate injects this page's <script src> tags dynamically,
+                // and dynamically-injected scripts load/execute asynchronously - so
+                // livewire:navigated can fire before Chart.js has actually finished
+                // loading. Wait for it instead of assuming it's ready.
+                if (typeof Chart === 'undefined') {
+                    setTimeout(initDashboardChart, 50);
+                    return;
+                }
+
+                const existingChart = Chart.getChart(ctx);
                 if (existingChart) {
                     existingChart.destroy();
                 }
