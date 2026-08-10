@@ -69,6 +69,9 @@
                                     {{ $item->inventory_type ?? '—' }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                                    {{ $item->diameter ?? '—' }}
+                                </td>
+                                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                                     {{ ucfirst(str_replace('_', ' ', $item->item_type)) }}
                                 </td>
                                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
