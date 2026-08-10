@@ -35,27 +35,26 @@
                         </a>
 
                         @foreach($folders ?? [] as $folder)
-                            <div x-data="{ open: false }" class="relative">
+                            <div x-data="{ open: false }"
+                                 class="relative flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all
+                                        {{ request()->get('folder') == $folder->id ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800' }}">
                                 <a href="{{ route('products.index', ['folder' => $folder->id]) }}"
                                    wire:navigate
-                                   class="flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all
-                                          {{ request()->get('folder') == $folder->id ? 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white' : 'text-gray-600 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-gray-800' }}">
-                                    <div class="flex items-center flex-1 min-w-0">
-                                        <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
-                                        <span class="truncate">{{ $folder->name }}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ $folder->products_count }}</span>
-                                        <button @click.prevent="open = !open" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
-                                        </button>
-                                    </div>
+                                   class="flex items-center flex-1 min-w-0">
+                                    <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>
+                                    <span class="truncate">{{ $folder->name }}</span>
                                 </a>
-                                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
-                                    <button @click="open = false; $dispatch('open-modal', 'edit-folder-{{ $folder->id }}')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ $folder->products_count }}</span>
+                                    <button type="button" @click.stop.prevent="open = !open" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                    </button>
+                                </div>
+                                <div x-show="open" @click.away="open = false" x-cloak class="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                    <button type="button" @click="open = false; $dispatch('open-modal', 'edit-folder-{{ $folder->id }}')" class="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-t-lg">
                                         Rename
                                     </button>
-                                    <button @click="open = false; $dispatch('open-modal', 'delete-folder-{{ $folder->id }}')" class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
+                                    <button type="button" @click="open = false; $dispatch('open-modal', 'delete-folder-{{ $folder->id }}')" class="block w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-b-lg">
                                         Delete
                                     </button>
                                 </div>
