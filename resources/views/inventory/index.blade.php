@@ -141,7 +141,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="20" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
+                                <td colspan="21" class="px-6 py-12 text-center text-sm text-gray-500 dark:text-gray-400">
                                     No inventory items found. <button x-data @click="$dispatch('open-modal', 'add-material')" class="text-blue-600 dark:text-blue-400 hover:underline">Add your first material</button>.
                                 </td>
                             </tr>
