@@ -69,33 +69,72 @@ class InventoryService
     }
 
     /**
-     * Reserve materials needed for a project based on its products.
+     * Aggregate total required quantity per inventory item across a project's
+     * manufactured products (via their BOM) AND any raw inventory items
+     * attached directly to the project. Same item counted both ways just adds up.
+     */
+    private function requiredQuantitiesForProject(Project $project): array
+    {
+        $project->load('products.requiredMaterials', 'inventoryItems');
+
+        $required = [];
+
+        foreach ($project->products as $product) {
+            $projectQuantity = $product->pivot->quantity ?? 1;
+
+            foreach ($product->requiredMaterials as $material) {
+                $requiredQty = ($material->pivot->quantity_required ?? 0) * $projectQuantity;
+
+                if ($requiredQty > 0) {
+                    $required[$material->id] = ($required[$material->id] ?? 0) + $requiredQty;
+                }
+            }
+        }
+
+        foreach ($project->inventoryItems as $item) {
+            $requiredQty = $item->pivot->quantity ?? 0;
+
+            if ($requiredQty > 0) {
+                $required[$item->id] = ($required[$item->id] ?? 0) + $requiredQty;
+            }
+        }
+
+        return $required;
+    }
+
+    /**
+     * Reserve materials needed for a project based on its products' BOM and
+     * any inventory items attached directly to the project.
      */
     public function reserveForProject(Project $project): void
     {
         DB::transaction(function () use ($project) {
-            $project->load('products.requiredMaterials');
+            $required = $this->requiredQuantitiesForProject($project);
 
-            foreach ($project->products as $product) {
-                $projectQuantity = $product->pivot->quantity ?? 1;
+            if (empty($required)) {
+                return;
+            }
 
-                foreach ($product->requiredMaterials as $material) {
-                    $requiredQty = ($material->pivot->quantity_required ?? 0) * $projectQuantity;
+            $materials = InventoryItem::whereIn('id', array_keys($required))->get()->keyBy('id');
 
-                    if ($requiredQty > 0) {
-                        $material->increment('reserved_quantity', $requiredQty);
+            foreach ($required as $materialId => $requiredQty) {
+                $material = $materials->get($materialId);
 
-                        InventoryTransaction::create([
-                            'inventory_item_id' => $material->id,
-                            'type' => 'reservation',
-                            'quantity' => $requiredQty,
-                            'reference_type' => Project::class,
-                            'reference_id' => $project->id,
-                            'notes' => "Reserved for project: {$project->name}",
-                            'performed_by' => Auth::id(),
-                        ]);
-                    }
+                if (!$material) {
+                    continue;
                 }
+
+                $material->increment('reserved_quantity', $requiredQty);
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $material->id,
+                    'type' => 'reservation',
+                    'quantity' => $requiredQty,
+                    'reference_type' => Project::class,
+                    'reference_id' => $project->id,
+                    'notes' => "Reserved for project: {$project->name}",
+                    'performed_by' => Auth::id(),
+                ]);
             }
         });
     }
@@ -106,29 +145,33 @@ class InventoryService
     public function releaseForProject(Project $project): void
     {
         DB::transaction(function () use ($project) {
-            $project->load('products.requiredMaterials');
+            $required = $this->requiredQuantitiesForProject($project);
 
-            foreach ($project->products as $product) {
-                $projectQuantity = $product->pivot->quantity ?? 1;
+            if (empty($required)) {
+                return;
+            }
 
-                foreach ($product->requiredMaterials as $material) {
-                    $requiredQty = ($material->pivot->quantity_required ?? 0) * $projectQuantity;
+            $materials = InventoryItem::whereIn('id', array_keys($required))->get()->keyBy('id');
 
-                    if ($requiredQty > 0) {
-                        $newReserved = max(0, $material->reserved_quantity - $requiredQty);
-                        $material->update(['reserved_quantity' => $newReserved]);
+            foreach ($required as $materialId => $requiredQty) {
+                $material = $materials->get($materialId);
 
-                        InventoryTransaction::create([
-                            'inventory_item_id' => $material->id,
-                            'type' => 'release',
-                            'quantity' => $requiredQty,
-                            'reference_type' => Project::class,
-                            'reference_id' => $project->id,
-                            'notes' => "Released from project: {$project->name}",
-                            'performed_by' => Auth::id(),
-                        ]);
-                    }
+                if (!$material) {
+                    continue;
                 }
+
+                $newReserved = max(0, $material->reserved_quantity - $requiredQty);
+                $material->update(['reserved_quantity' => $newReserved]);
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $material->id,
+                    'type' => 'release',
+                    'quantity' => $requiredQty,
+                    'reference_type' => Project::class,
+                    'reference_id' => $project->id,
+                    'notes' => "Released from project: {$project->name}",
+                    'performed_by' => Auth::id(),
+                ]);
             }
         });
     }
@@ -142,21 +185,7 @@ class InventoryService
     public function consumeForProject(Project $project): void
     {
         DB::transaction(function () use ($project) {
-            $project->load('products.requiredMaterials');
-
-            // Aggregate total required quantity per material across all products on the project
-            $required = [];
-            foreach ($project->products as $product) {
-                $projectQuantity = $product->pivot->quantity ?? 1;
-
-                foreach ($product->requiredMaterials as $material) {
-                    $requiredQty = ($material->pivot->quantity_required ?? 0) * $projectQuantity;
-
-                    if ($requiredQty > 0) {
-                        $required[$material->id] = ($required[$material->id] ?? 0) + $requiredQty;
-                    }
-                }
-            }
+            $required = $this->requiredQuantitiesForProject($project);
 
             if (empty($required)) {
                 return;

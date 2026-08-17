@@ -78,6 +78,16 @@ class Project extends Model
     }
 
     /**
+     * Get the raw inventory items attached directly to this project
+     * (e.g. a customer buying raw steel sheet, not a manufactured product).
+     */
+    public function inventoryItems(): BelongsToMany
+    {
+        return $this->belongsToMany(InventoryItem::class, 'project_inventory_item')
+            ->withPivot('quantity', 'notes');
+    }
+
+    /**
      * Get the teams assigned to this project.
      */
     public function teams(): BelongsToMany

@@ -6,6 +6,7 @@ use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Http\Requests\Project\UpdateProjectStatusRequest;
 use App\Models\Client;
+use App\Models\InventoryItem;
 use App\Models\Product;
 use App\Models\Project;
 use App\Models\Team;
@@ -73,11 +74,12 @@ class ProjectController extends Controller
     public function create(): View
     {
         $products = Product::where('is_active', true)->get();
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name', 'sku', 'unit_of_measure']);
         $teams = Team::where('is_active', true)->get();
         $users = User::whereNull('deleted_at')->get();
         $clients = Client::where('is_active', true)->get();
 
-        return view('projects.create', compact('products', 'teams', 'users', 'clients'));
+        return view('projects.create', compact('products', 'inventoryItems', 'teams', 'users', 'clients'));
     }
 
     /**
@@ -116,6 +118,7 @@ class ProjectController extends Controller
             'client',
             'projectManager',
             'products.category',
+            'inventoryItems',
             'teams.users',
             'members',
             'attachments.uploader',
@@ -137,14 +140,15 @@ class ProjectController extends Controller
         // Check if this project should be marked as delayed
         $this->projectService->checkAndMarkDelayed($project);
 
-        $project->load(['products', 'teams', 'members']);
+        $project->load(['products', 'inventoryItems', 'teams', 'members']);
 
         $products = Product::where('is_active', true)->get();
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name', 'sku', 'unit_of_measure']);
         $teams = Team::where('is_active', true)->get();
         $users = User::whereNull('deleted_at')->get();
         $clients = Client::where('is_active', true)->get();
 
-        return view('projects.edit', compact('project', 'products', 'teams', 'users', 'clients'));
+        return view('projects.edit', compact('project', 'products', 'inventoryItems', 'teams', 'users', 'clients'));
     }
 
     /**

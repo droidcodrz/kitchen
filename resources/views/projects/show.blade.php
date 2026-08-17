@@ -113,6 +113,37 @@
                 @endif
             </div>
 
+            {{-- Additional Inventory Items --}}
+            <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Additional Inventory Items</h3>
+                @if($project->inventoryItems->count() > 0)
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700/50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Item</th>
+                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">SKU</th>
+                                    <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach($project->inventoryItems as $inventoryItem)
+                                    <tr>
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100">
+                                            <a href="{{ route('inventory.show', $inventoryItem) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">{{ $inventoryItem->name }}</a>
+                                        </td>
+                                        <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $inventoryItem->sku }}</td>
+                                        <td class="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-center">{{ $inventoryItem->pivot->quantity }} {{ $inventoryItem->unit_of_measure }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @else
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No additional inventory items on this project.</p>
+                @endif
+            </div>
+
             {{-- Attachments --}}
             <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Attachments</h3>

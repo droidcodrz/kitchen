@@ -51,6 +51,11 @@ class StoreProjectRequest extends FormRequest
             // ProjectService already skips rows with no product_id.
             'products.*.product_id' => ['nullable', 'exists:products,id'],
             'products.*.quantity' => ['required_with:products', 'integer', 'min:1'],
+            'inventory_items' => ['nullable', 'array'],
+            // Same pattern as products above - the form always renders one
+            // blank row by default, so the empty row must stay valid.
+            'inventory_items.*.inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
+            'inventory_items.*.quantity' => ['required_with:inventory_items', 'numeric', 'min:0.01'],
             'team_ids' => ['nullable', 'array'],
             'team_ids.*' => ['exists:teams,id'],
             'members' => ['nullable', 'array'],

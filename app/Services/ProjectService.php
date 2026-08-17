@@ -113,6 +113,21 @@ class ProjectService
             $project->products()->sync($productSync);
         }
 
+        // Sync inventory items attached directly to the project (raw materials
+        // sold/used as-is, not wrapped in a manufactured Product)
+        if (!empty($data['inventory_items'])) {
+            $inventoryItemSync = [];
+            foreach ($data['inventory_items'] as $entry) {
+                if (!empty($entry['inventory_item_id'])) {
+                    $inventoryItemSync[$entry['inventory_item_id']] = [
+                        'quantity' => $entry['quantity'] ?? 1,
+                        'notes' => $entry['notes'] ?? null,
+                    ];
+                }
+            }
+            $project->inventoryItems()->sync($inventoryItemSync);
+        }
+
         // Sync teams
         if (!empty($data['team_ids'])) {
             $teamSync = [];
@@ -152,7 +167,7 @@ class ProjectService
             $this->inventoryService->reserveForProject($project);
         }
 
-        return $project->load(['client', 'projectManager', 'products', 'teams', 'members']);
+        return $project->load(['client', 'projectManager', 'products', 'inventoryItems', 'teams', 'members']);
     }
 
     /**
@@ -179,6 +194,20 @@ class ProjectService
                 }
             }
             $project->products()->sync($productSync);
+        }
+
+        // Sync inventory items attached directly to the project
+        if (array_key_exists('inventory_items', $data)) {
+            $inventoryItemSync = [];
+            foreach ($data['inventory_items'] ?? [] as $entry) {
+                if (!empty($entry['inventory_item_id'])) {
+                    $inventoryItemSync[$entry['inventory_item_id']] = [
+                        'quantity' => $entry['quantity'] ?? 1,
+                        'notes' => $entry['notes'] ?? null,
+                    ];
+                }
+            }
+            $project->inventoryItems()->sync($inventoryItemSync);
         }
 
         // Sync teams
@@ -228,7 +257,7 @@ class ProjectService
             }
         }
 
-        return $project->fresh(['client', 'projectManager', 'products', 'teams', 'members']);
+        return $project->fresh(['client', 'projectManager', 'products', 'inventoryItems', 'teams', 'members']);
     }
 
     /**
