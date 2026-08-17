@@ -46,6 +46,7 @@ class ProductController extends Controller
         $products = $query->latest()->paginate($perPage);
 
         $categories = Category::where('is_active', true)->orderBy('name')->get();
+        $inventoryItems = InventoryItem::where('is_active', true)->get(['id', 'name']);
         $folders = \App\Models\ProductFolder::withCount('products')
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -65,7 +66,7 @@ class ProductController extends Controller
 
         $dropdownOptions = $this->getDropdownOptions();
 
-        return view('products.index', compact('products', 'categories', 'view', 'folders', 'dropdownOptions', 'totalProductsCount', 'uncategorizedProductsCount'));
+        return view('products.index', compact('products', 'categories', 'inventoryItems', 'view', 'folders', 'dropdownOptions', 'totalProductsCount', 'uncategorizedProductsCount'));
     }
 
     /**
