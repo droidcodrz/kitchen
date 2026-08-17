@@ -214,16 +214,18 @@
             {{-- Required Materials --}}
             @php
                 $currentMaterials = old('material_ids', $product->requiredMaterials->pluck('id')->toArray());
+                $currentQuantities = $product->requiredMaterials->pluck('pivot.quantity_required', 'id')->toArray();
                 $existingCustomFields = $product->customFieldValues->keyBy('custom_field_definition_id')->map(fn($v) => $v->value)->toArray();
             @endphp
             <div>
                 <x-input-label :value="__('Required Materials')" />
-                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Select the inventory items needed to produce this product.</p>
-                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Select the inventory items needed to produce this product, and how many units of each are consumed per unit built.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                     @foreach($inventoryItems ?? [] as $item)
-                        <label class="flex items-center p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition">
+                        <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition">
                             <input type="checkbox" name="material_ids[]" value="{{ $item->id }}" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500" {{ in_array($item->id, $currentMaterials) ? 'checked' : '' }} />
-                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $item->name }}</span>
+                            <span class="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">{{ $item->name }}</span>
+                            <input type="number" name="material_quantities[{{ $item->id }}]" min="0.01" step="0.01" value="{{ old('material_quantities.' . $item->id, $currentQuantities[$item->id] ?? 1) }}" title="Quantity required per unit built" class="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent" />
                         </label>
                     @endforeach
                 </div>

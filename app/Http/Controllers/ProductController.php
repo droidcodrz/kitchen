@@ -119,7 +119,9 @@ class ProductController extends Controller
         $product = Product::create($data);
 
         if (!empty($data['material_ids'])) {
-            $product->requiredMaterials()->sync($data['material_ids']);
+            $product->requiredMaterials()->sync(
+                $this->buildMaterialSyncData($data['material_ids'], $request->input('material_quantities', []))
+            );
         }
 
         if ($request->has('custom_fields')) {
@@ -192,7 +194,9 @@ class ProductController extends Controller
         $product->update($data);
 
         if (array_key_exists('material_ids', $data)) {
-            $product->requiredMaterials()->sync($data['material_ids'] ?? []);
+            $product->requiredMaterials()->sync(
+                $this->buildMaterialSyncData($data['material_ids'] ?? [], $request->input('material_quantities', []))
+            );
         }
 
         if ($request->has('custom_fields')) {
@@ -210,6 +214,23 @@ class ProductController extends Controller
 
         return redirect()->route('products.show', $product)
             ->with('success', 'Product updated successfully.');
+    }
+
+    /**
+     * Pair each selected material ID with its quantity_required for sync(),
+     * defaulting to 1 when no quantity was submitted for that material.
+     */
+    private function buildMaterialSyncData(array $materialIds, array $quantities): array
+    {
+        $syncData = [];
+
+        foreach ($materialIds as $materialId) {
+            $syncData[$materialId] = [
+                'quantity_required' => $quantities[$materialId] ?? 1,
+            ];
+        }
+
+        return $syncData;
     }
 
     /**
