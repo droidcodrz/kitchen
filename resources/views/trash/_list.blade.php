@@ -235,6 +235,19 @@
             return {
                 restoring: false,
 
+                // Feedback is shown as a floating notice rather than inline:
+                // this whole partial is replaced on success, which would wipe
+                // out any message rendered inside it.
+                notify(message, ok) {
+                    const el = document.createElement('div');
+                    el.setAttribute('role', 'status');
+                    el.className = 'fixed top-4 right-4 z-[100] px-4 py-3 rounded-lg shadow-lg text-sm font-medium ' +
+                        (ok ? 'bg-green-600 text-white' : 'bg-red-600 text-white');
+                    el.textContent = message;
+                    document.body.appendChild(el);
+                    setTimeout(() => el.remove(), 4000);
+                },
+
                 async restore(type, id) {
                     this.restoring = true;
 
@@ -250,17 +263,28 @@
                             },
                         });
 
+                        // Both failure branches used to return silently, so a
+                        // restore that did not happen looked identical to one
+                        // that did - and a restore that did happen gave no
+                        // confirmation at all.
                         if (!response.ok) {
+                            const body = await response.json().catch(() => ({}));
+                            this.notify(body.message || 'Could not restore that item. Please try again.', false);
                             this.restoring = false;
                             return;
                         }
 
+                        const body = await response.json().catch(() => ({}));
+
                         const listResponse = await fetch(window.location.href, {
                             headers: { 'X-Requested-With': 'XMLHttpRequest' },
                         });
-                        const html = await listResponse.text();
-                        document.getElementById('trash-list').innerHTML = html;
+                        document.getElementById('trash-list').innerHTML = await listResponse.text();
+
+                        this.notify(body.message || 'Item restored successfully.', true);
                     } catch (e) {
+                        this.notify('Could not restore that item. Please check your connection and try again.', false);
+                    } finally {
                         this.restoring = false;
                     }
                 },

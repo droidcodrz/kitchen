@@ -255,6 +255,10 @@
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Adjust Stock</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Current stock: {{ number_format($inventoryItem->stock_quantity, 0) }} {{ $inventoryItem->unit_of_measure }}</p>
 
+            <div class="mb-4">
+                <x-validation-summary />
+            </div>
+
             <form method="POST" action="{{ route('inventory.adjust-stock', $inventoryItem) }}" class="space-y-4">
                 @csrf
 

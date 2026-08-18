@@ -132,10 +132,17 @@
     </div>
 
     {{-- New Project Modal --}}
-    <x-modal name="new-project" :show="$errors->hasAny(['name', 'client_id', 'status', 'proposal_signed_date', 'delivery_date', 'production_deadline', 'products', 'products.*', 'members', 'members.*', 'attachments', 'attachments.*'])" maxWidth="3xl">
+    {{-- Reopen on any error at all: an explicit field list silently missed
+         nested keys like inventory_items.0.quantity, so the modal closed and
+         the user was left with no idea why nothing saved. --}}
+    <x-modal name="new-project" :show="$errors->any()" maxWidth="3xl">
         <div class="p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">New Project</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Fill in the details below to create a new project</p>
+
+            <div class="mb-4">
+                <x-validation-summary />
+            </div>
 
             <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" class="space-y-6"
                 x-data="{ nameTaken: false }"

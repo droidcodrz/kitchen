@@ -29,10 +29,14 @@
     </div>
 
     {{-- New Team Modal --}}
-    <x-modal name="new-team" :show="false" maxWidth="md">
+    <x-modal name="new-team" :show="$errors->hasAny(['name', 'description', 'lead_id'])" maxWidth="md">
         <div class="p-6">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">New Team</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">Create a new team</p>
+
+            <div class="mb-4">
+                <x-validation-summary />
+            </div>
 
             <form method="POST" action="{{ route('teams.store') }}" class="space-y-4">
                 @csrf
