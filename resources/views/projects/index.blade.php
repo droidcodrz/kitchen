@@ -11,20 +11,24 @@
                 </div>
                 <div class="flex items-center gap-3">
                     <!-- View Toggle -->
-                    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                    <div x-data="{ active: '{{ $view ?? 'grid' }}' }" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         <a href="{{ route('projects.index', ['view' => 'grid'] + request()->except('view')) }}"
                            wire:navigate
-                           class="p-2 rounded {{ ($view ?? 'grid') === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : '' }}"
+                           @click="active = 'grid'"
+                           class="p-2 rounded transition-colors"
+                           :class="active === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
                            title="Grid View">
-                            <svg class="w-5 h-5 {{ ($view ?? 'grid') === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" :class="active === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
                         </a>
                         <a href="{{ route('projects.index', ['view' => 'table'] + request()->except('view')) }}"
                            wire:navigate
-                           class="p-2 rounded {{ ($view ?? 'grid') === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : '' }}"
+                           @click="active = 'table'"
+                           class="p-2 rounded transition-colors"
+                           :class="active === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
                            title="Table View">
-                            <svg class="w-5 h-5 {{ ($view ?? 'grid') === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" :class="active === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                             </svg>
                         </a>
@@ -58,30 +62,33 @@
         </div>
 
         {{-- Status Filter Tabs --}}
-        <div class="mb-6">
-            <div class="flex items-center gap-2 overflow-x-auto pb-2">
-                @php
-                    $statuses = [
-                        '' => 'All',
-                        'draft' => 'Draft',
-                        'confirmed' => 'Confirmed',
-                        'design' => 'Design',
-                        'in_production' => 'In Production',
-                        'delayed' => 'Delayed',
-                        'inspection' => 'Inspection',
-                        'finished' => 'Finished',
-                        'delivered' => 'Delivered',
-                    ];
-                    $currentStatus = request('status', '');
-                @endphp
-
+        @php
+            $statuses = [
+                '' => 'All',
+                'draft' => 'Draft',
+                'confirmed' => 'Confirmed',
+                'design' => 'Design',
+                'in_production' => 'In Production',
+                'delayed' => 'Delayed',
+                'inspection' => 'Inspection',
+                'finished' => 'Finished',
+                'delivered' => 'Delivered',
+            ];
+            $currentStatus = request('status', '');
+        @endphp
+        <div x-data="{ active: '{{ $currentStatus }}', loading: false }"
+             x-on:livewire:navigating.window="loading = true"
+             x-on:livewire:navigated.window="loading = false"
+             class="mb-6">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2 transition-opacity" :class="loading ? 'opacity-50' : ''">
                 @foreach($statuses as $value => $label)
                     <a href="{{ route('projects.index', ['status' => $value] + request()->except(['status', 'page'])) }}"
                        wire:navigate
-                       class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
-                              {{ $currentStatus === $value
-                                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600' }}">
+                       @click="active = '{{ $value }}'"
+                       class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border"
+                       :class="active === '{{ $value }}'
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         {{ $label }}
                     </a>
                 @endforeach
