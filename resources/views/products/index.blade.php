@@ -46,10 +46,16 @@
     </div>
 
     {{-- Add Product Modal --}}
-    <x-modal name="add-product" :show="false" maxWidth="4xl">
+    {{-- Reopen automatically when the submit came back with errors, otherwise
+         the modal closes and the messages are never seen. --}}
+    <x-modal name="add-product" :show="$errors->any()" maxWidth="4xl">
         <div class="p-6" x-data="productForm()">
             <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">New Product</h2>
             <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Add a new equipment item to the inventory</p>
+
+            <div class="mb-4">
+                <x-validation-summary />
+            </div>
 
             {{-- Live Preview --}}
             <div class="mb-5 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">

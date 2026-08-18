@@ -33,7 +33,11 @@ class StoreProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['nullable', 'max:191'],
+            // A blank name is auto-generated from the other fields, but a name
+            // typed in by hand has to be unique - it becomes the slug, which
+            // carries a unique index and would otherwise fail at insert time
+            // as a raw 500 rather than a message on the field.
+            'name' => ['nullable', 'max:191', 'unique:products,name'],
             'name_suffix' => ['nullable', 'max:100'],
             'sku' => ['nullable', 'unique:products,sku', 'max:100'],
             'category_id' => ['required', 'exists:categories,id'],
@@ -54,6 +58,19 @@ class StoreProductRequest extends FormRequest
             'material_ids.*' => ['exists:inventory_items,id'],
             'material_quantities' => ['nullable', 'array'],
             'material_quantities.*' => ['nullable', 'numeric', 'min:0.01', 'max:999999'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.unique' => 'A product with this name already exists. Please use a different name, or add a suffix to tell them apart.',
+            'sku.unique' => 'A product with this SKU already exists.',
+            'material_quantities.*.max' => 'Material quantity cannot be more than 999999.',
+            'material_quantities.*.min' => 'Material quantity must be greater than 0.',
         ];
     }
 }

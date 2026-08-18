@@ -172,7 +172,16 @@ class ProductController extends Controller
         }
         unset($data['name_suffix']);
 
-        $data['slug'] = Str::slug($data['name']);
+        // slug is uniquely indexed just like sku, so it needs the same
+        // collision handling - renaming a product onto an existing slug
+        // would otherwise fail at the database as a 500.
+        $baseSlug = Str::slug($data['name']);
+        $data['slug'] = $baseSlug;
+        $suffix = 1;
+        while (Product::where('slug', $data['slug'])->where('id', '!=', $product->id)->exists()) {
+            $data['slug'] = $baseSlug . '-' . $suffix;
+            $suffix++;
+        }
 
         if (empty($data['sku'])) {
             $data['sku'] = $data['item_label'];
@@ -223,6 +232,7 @@ class ProductController extends Controller
     private function createProductRetryingOnSkuCollision(array $data): Product
     {
         $userSuppliedSku = !empty($data['sku']);
+        $baseSlug = $data['slug'];
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
             if (!$userSuppliedSku) {
@@ -231,12 +241,18 @@ class ProductController extends Controller
                     : $data['item_label'] . '-' . $attempt;
             }
 
+            // slug carries its own unique index, and two products can legitimately
+            // generate the same one (same auto-generated description). Suffix it
+            // alongside the SKU so a collision on either is retried, not 500'd.
+            $data['slug'] = $attempt === 0 ? $baseSlug : $baseSlug . '-' . $attempt;
+
             try {
                 return Product::create($data);
             } catch (\Illuminate\Database\QueryException $e) {
-                $isDuplicateSku = $e->getCode() === '23000' && str_contains($e->getMessage(), 'sku');
+                $isDuplicate = $e->getCode() === '23000'
+                    && (str_contains($e->getMessage(), 'sku') || str_contains($e->getMessage(), 'slug'));
 
-                if ($userSuppliedSku || !$isDuplicateSku || $attempt === 4) {
+                if (!$isDuplicate || $attempt === 4) {
                     throw $e;
                 }
             }

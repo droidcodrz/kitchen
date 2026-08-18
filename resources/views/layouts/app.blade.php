@@ -112,6 +112,58 @@
             </div>
         </div>
 
+        <script>
+            // A double-clicked submit sends the same form twice. The second
+            // insert then collides with the first on a unique column and comes
+            // back as a 500, even though the record was created fine - so guard
+            // every form once here rather than per form.
+            (function () {
+                function guardSubmit(event) {
+                    const form = event.target;
+
+                    if (!(form instanceof HTMLFormElement)) return;
+
+                    if (form.dataset.submitting === 'true') {
+                        event.preventDefault();
+                        event.stopImmediatePropagation();
+                        return;
+                    }
+
+                    form.dataset.submitting = 'true';
+
+                    // Disable on the next tick: buttons disabled during the
+                    // submit event are dropped from the payload, taking any
+                    // name/value they carry with them.
+                    setTimeout(function () {
+                        form.querySelectorAll('button[type=submit], input[type=submit]')
+                            .forEach(function (button) {
+                                button.disabled = true;
+                                button.classList.add('opacity-60', 'cursor-not-allowed');
+                            });
+                    }, 0);
+                }
+
+                document.addEventListener('submit', guardSubmit, true);
+
+                // wire:navigate restores pages from cache, including a form
+                // still flagged from its last submit - clear it on arrival so
+                // the form stays usable.
+                function releaseForms() {
+                    document.querySelectorAll('form[data-submitting=true]').forEach(function (form) {
+                        delete form.dataset.submitting;
+                        form.querySelectorAll('button[type=submit], input[type=submit]')
+                            .forEach(function (button) {
+                                button.disabled = false;
+                                button.classList.remove('opacity-60', 'cursor-not-allowed');
+                            });
+                    });
+                }
+
+                document.addEventListener('livewire:navigated', releaseForms);
+                window.addEventListener('pageshow', releaseForms);
+            })();
+        </script>
+
         @stack('scripts')
         @livewireScripts
     </body>
