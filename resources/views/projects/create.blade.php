@@ -16,6 +16,8 @@
         <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" class="p-6 space-y-8" id="create-project-form">
             @csrf
 
+            <x-validation-summary />
+
             {{-- Basic Info --}}
             <div>
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Basic Information</h3>

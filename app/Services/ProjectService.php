@@ -7,6 +7,7 @@ use App\Notifications\ProjectDelayedNotification;
 use App\Notifications\ProjectStatusChangedNotification;
 use Carbon\Carbon;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -318,13 +319,33 @@ class ProjectService
      */
     private function notifyWatchers(Project $project, Notification $notification): void
     {
-        $recipients = collect([$project->projectManager])
-            ->merge($project->members)
-            ->filter()
-            ->unique('id');
+        // Notifying is a side effect of a status change that has already been
+        // written. A broken mail transport or an unreachable queue must not
+        // turn that successful change into a 500 - log and carry on.
+        try {
+            $recipients = collect([$project->projectManager])
+                ->merge($project->members)
+                ->filter()
+                ->unique('id');
+        } catch (\Throwable $e) {
+            Log::error('Failed to resolve project notification recipients', [
+                'project_id' => $project->id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         foreach ($recipients as $user) {
-            $user->notify($notification);
+            try {
+                $user->notify($notification);
+            } catch (\Throwable $e) {
+                Log::error('Failed to notify project watcher', [
+                    'project_id' => $project->id,
+                    'user_id' => $user->id,
+                    'exception' => $e->getMessage(),
+                ]);
+            }
         }
     }
 }

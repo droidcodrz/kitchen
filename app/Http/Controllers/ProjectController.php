@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ProjectService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\View\View;
 
 class ProjectController extends Controller
@@ -27,21 +28,37 @@ class ProjectController extends Controller
      */
     public function index(Request $request): View
     {
-        // Check and mark delayed projects
-        $this->projectService->checkAllDelayedProjects();
+        // Sweep for newly-delayed projects, but at most once every few minutes.
+        // This used to run on every single request, so each status-tab click
+        // and every pagination step re-scanned all active projects and re-sent
+        // notifications before rendering - the main reason list loads were slow
+        // and wildly inconsistent. A daily scheduled command is the real safety
+        // net (routes/console.php); this is just the near-real-time top-up.
+        Cache::remember('projects:delayed-sweep', now()->addMinutes(5), function () {
+            $this->projectService->checkAllDelayedProjects();
 
-        // Handle view preference
+            return true;
+        });
+
+        // Handle view preference. Both layouts are rendered from the same page
+        // and swapped client-side, so this only decides which one starts
+        // visible - switching views never costs a request.
         if ($request->has('view')) {
             session(['projects_view' => $request->get('view')]);
         }
         $view = session('projects_view', 'grid');
-        $perPage = $view === 'table' ? 25 : 15;
+        // Status tabs filter in the browser over what this page already
+        // rendered, so a generous page size keeps the whole working set on one
+        // page and every tab click stays a zero-request operation.
+        $perPage = 100;
 
         $query = Project::with(['client', 'projectManager', 'teams', 'products', 'members', 'attachments']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
+        // Status is deliberately NOT filtered here. The tabs filter client-side,
+        // so this page must carry every status - otherwise clicking "All" after
+        // landing on ?status=delayed would only ever show the delayed subset the
+        // server had already narrowed us to. The query string still drives the
+        // tab that starts selected.
 
         if ($request->filled('search')) {
             $search = $request->input('search');

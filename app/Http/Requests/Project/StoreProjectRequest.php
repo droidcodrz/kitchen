@@ -23,6 +23,31 @@ class StoreProjectRequest extends FormRequest
             fn ($value) => is_string($value) ? strip_tags($value) : $value,
             $this->all()
         ));
+
+        $this->merge([
+            'products' => $this->filledRows($this->input('products', []), 'product_id'),
+            'inventory_items' => $this->filledRows($this->input('inventory_items', []), 'inventory_item_id'),
+        ]);
+    }
+
+    /**
+     * Both repeaters always render one blank row so there's something to fill
+     * in. Left untouched, that blank row still reaches the validator and trips
+     * required_with on its quantity, which fails the whole submit over a row
+     * the user never filled. Drop rows with no selection before validating.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function filledRows(mixed $rows, string $idKey): array
+    {
+        if (!is_array($rows)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $rows,
+            fn ($row) => is_array($row) && !empty($row[$idKey] ?? null)
+        ));
     }
 
     /**
@@ -54,23 +79,37 @@ class StoreProjectRequest extends FormRequest
             'labels.*' => ['string', 'max:50'],
             'project_manager_id' => ['nullable', 'exists:users,id'],
             'products' => ['nullable', 'array'],
-            // Both project forms always render one blank equipment row by
-            // default (product_id empty, quantity 1) so there's a row to
-            // fill in - that blank row must stay valid on its own, since
-            // ProjectService already skips rows with no product_id.
-            'products.*.product_id' => ['nullable', 'exists:products,id'],
-            'products.*.quantity' => ['required_with:products', 'integer', 'min:1'],
+            // prepareForValidation() has already dropped rows with no
+            // selection, so every row that reaches here is one the user
+            // actually filled in and must be complete.
+            'products.*.product_id' => ['required', 'exists:products,id'],
+            'products.*.quantity' => ['required', 'integer', 'min:1', 'max:999999'],
             'inventory_items' => ['nullable', 'array'],
-            // Same pattern as products above - the form always renders one
-            // blank row by default, so the empty row must stay valid.
-            'inventory_items.*.inventory_item_id' => ['nullable', 'exists:inventory_items,id'],
-            'inventory_items.*.quantity' => ['required_with:inventory_items', 'numeric', 'min:0.01'],
+            'inventory_items.*.inventory_item_id' => ['required', 'exists:inventory_items,id'],
+            'inventory_items.*.quantity' => ['required', 'numeric', 'min:0.01', 'max:999999'],
             'team_ids' => ['nullable', 'array'],
             'team_ids.*' => ['exists:teams,id'],
             'members' => ['nullable', 'array'],
             'members.*' => ['exists:users,id'],
             'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:102400', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx,mp4,mov,avi,webm,mkv'], // 100MB max per file, videos included
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'products.*.product_id.required' => 'Select a product for each equipment line, or remove the line.',
+            'products.*.product_id.exists' => 'The selected product no longer exists.',
+            'products.*.quantity.required' => 'Enter a quantity for each equipment line.',
+            'products.*.quantity.min' => 'Equipment quantity must be at least 1.',
+            'inventory_items.*.inventory_item_id.required' => 'Select an inventory item for each line, or remove the line.',
+            'inventory_items.*.inventory_item_id.exists' => 'The selected inventory item no longer exists.',
+            'inventory_items.*.quantity.required' => 'Enter a quantity for each inventory item line.',
+            'inventory_items.*.quantity.min' => 'Inventory item quantity must be greater than 0.',
         ];
     }
 

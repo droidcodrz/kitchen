@@ -1,6 +1,43 @@
 <x-app-layout>
     <x-slot name="title">Projects</x-slot>
 
+    {{-- Grid/Table preference lives entirely in the browser: switching views
+         swaps already-rendered markup instead of re-fetching the page. The
+         choice is remembered across navigations via localStorage. --}}
+    <script>
+        document.addEventListener('alpine:init', () => {
+            if (Alpine.store('projectsView')) return;
+
+            Alpine.store('projectsView', {
+                mode: localStorage.getItem('projectsView') || @json($view ?? 'grid'),
+                set(mode) {
+                    this.mode = mode;
+                    localStorage.setItem('projectsView', mode);
+                },
+            });
+
+            Alpine.store('projectsFilter', {
+                status: @json(request('status', '')),
+                matches(status) {
+                    return this.status === '' || this.status === status;
+                },
+                set(status) {
+                    this.status = status;
+                    // Keep the URL shareable/reloadable without navigating.
+                    const url = new URL(window.location);
+                    status ? url.searchParams.set('status', status) : url.searchParams.delete('status');
+                    window.history.replaceState({}, '', url);
+                },
+                visibleCount() {
+                    return document.querySelectorAll('[data-status]').length === 0
+                        ? 0
+                        : Array.from(document.querySelectorAll('[data-status]'))
+                            .filter(el => this.matches(el.dataset.status)).length;
+                },
+            });
+        });
+    </script>
+
     <!-- Page Header -->
     <div class="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -10,28 +47,26 @@
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage kitchen projects, progress, materials, and teams</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <!-- View Toggle -->
-                    <div x-data="{ active: '{{ $view ?? 'grid' }}' }" class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-                        <a href="{{ route('projects.index', ['view' => 'grid'] + request()->except('view')) }}"
-                           wire:navigate
-                           @click="active = 'grid'"
-                           class="p-2 rounded transition-colors"
-                           :class="active === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
-                           title="Grid View">
-                            <svg class="w-5 h-5" :class="active === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- View Toggle: purely client-side, no request on switch -->
+                    <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+                        <button type="button"
+                                @click="$store.projectsView.set('grid')"
+                                class="p-2 rounded transition-colors"
+                                :class="$store.projectsView.mode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
+                                title="Grid View">
+                            <svg class="w-5 h-5" :class="$store.projectsView.mode === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
-                        </a>
-                        <a href="{{ route('projects.index', ['view' => 'table'] + request()->except('view')) }}"
-                           wire:navigate
-                           @click="active = 'table'"
-                           class="p-2 rounded transition-colors"
-                           :class="active === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
-                           title="Table View">
-                            <svg class="w-5 h-5" :class="active === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        </button>
+                        <button type="button"
+                                @click="$store.projectsView.set('table')"
+                                class="p-2 rounded transition-colors"
+                                :class="$store.projectsView.mode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
+                                title="Table View">
+                            <svg class="w-5 h-5" :class="$store.projectsView.mode === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                             </svg>
-                        </a>
+                        </button>
                     </div>
                     <button x-data @click="$dispatch('open-modal', 'new-project')" class="inline-flex items-center px-4 py-2.5 bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 active:bg-gray-950 dark:active:bg-gray-500 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 text-white text-sm font-medium rounded-lg transition-all duration-150">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
@@ -76,21 +111,19 @@
             ];
             $currentStatus = request('status', '');
         @endphp
-        <div x-data="{ active: '{{ $currentStatus }}', loading: false }"
-             x-on:livewire:navigating.window="loading = true"
-             x-on:livewire:navigated.window="loading = false"
-             class="mb-6">
-            <div class="flex items-center gap-2 overflow-x-auto pb-2 transition-opacity" :class="loading ? 'opacity-50' : ''">
+        {{-- Status tabs filter the already-loaded rows in the browser, so
+             switching between them is instant and costs no request at all. --}}
+        <div class="mb-6">
+            <div class="flex items-center gap-2 overflow-x-auto pb-2">
                 @foreach($statuses as $value => $label)
-                    <a href="{{ route('projects.index', ['status' => $value] + request()->except(['status', 'page'])) }}"
-                       wire:navigate
-                       @click="active = '{{ $value }}'"
-                       class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border"
-                       :class="active === '{{ $value }}'
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
+                    <button type="button"
+                            @click="$store.projectsFilter.set('{{ $value }}')"
+                            class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border"
+                            :class="$store.projectsFilter.status === '{{ $value }}'
+                                   ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                                   : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         {{ $label }}
-                    </a>
+                    </button>
                 @endforeach
             </div>
         </div>

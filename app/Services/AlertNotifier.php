@@ -28,24 +28,37 @@ class AlertNotifier
      */
     public function notify(string $alertType, \Closure $notificationFactory, ?\Closure $shouldSkip = null): int
     {
-        $config = AlertConfiguration::where('alert_type', $alertType)
-            ->where('is_enabled', true)
-            ->first();
+        // Everything from here on is a side effect of an action whose own
+        // database write has already committed. Resolving the config, the
+        // recipients, or building the notification can each throw - none of
+        // that may turn a succeeded action into a 500 for the user.
+        try {
+            $config = AlertConfiguration::where('alert_type', $alertType)
+                ->where('is_enabled', true)
+                ->first();
 
-        if (!$config) {
+            if (!$config) {
+                return 0;
+            }
+
+            $users = $this->resolveUsers($config);
+            // always_notify_emails only makes sense as an email address - if email
+            // delivery is off for this alert, there's no channel left to reach them.
+            $extraEmails = $config->notify_via_email ? ($config->always_notify_emails ?? []) : [];
+
+            if ($users->isEmpty() && empty($extraEmails)) {
+                return 0;
+            }
+
+            $notification = $notificationFactory((bool) $config->notify_via_email);
+        } catch (\Throwable $e) {
+            Log::error('Failed to prepare alert notification', [
+                'alert_type' => $alertType,
+                'exception' => $e->getMessage(),
+            ]);
+
             return 0;
         }
-
-        $users = $this->resolveUsers($config);
-        // always_notify_emails only makes sense as an email address - if email
-        // delivery is off for this alert, there's no channel left to reach them.
-        $extraEmails = $config->notify_via_email ? ($config->always_notify_emails ?? []) : [];
-
-        if ($users->isEmpty() && empty($extraEmails)) {
-            return 0;
-        }
-
-        $notification = $notificationFactory((bool) $config->notify_via_email);
 
         $sent = 0;
 
@@ -55,11 +68,15 @@ class AlertNotifier
         // happens after that action's own database write already committed.
         // Log and move on to the next recipient instead of throwing.
         foreach ($users as $user) {
-            if ($shouldSkip && $shouldSkip($user)) {
-                continue;
-            }
-
             try {
+                // The dedupe check runs inside the same guard as the send:
+                // it queries the notifications table (whereJsonContains and
+                // friends), which can fail on its own - and a failure there
+                // must not surface as a 500 either.
+                if ($shouldSkip && $shouldSkip($user)) {
+                    continue;
+                }
+
                 $user->notify($notification);
                 $sent++;
             } catch (\Throwable $e) {

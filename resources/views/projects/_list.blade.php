@@ -1,4 +1,6 @@
-@if(($view ?? 'grid') === 'table')
+{{-- Both layouts render once and are swapped client-side by the `projectsView`
+     store, so toggling Grid/Table is instant and never hits the server. --}}
+<div x-show="$store.projectsView.mode === 'table'" x-cloak>
     {{-- Table View --}}
     <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden">
         <div class="overflow-x-auto">
@@ -34,7 +36,9 @@
                 </thead>
                 <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                     @forelse(($projects ?? collect()) as $project)
-                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800"
+                            data-status="{{ $project->status ?? 'draft' }}"
+                            x-show="$store.projectsFilter.matches('{{ $project->status ?? 'draft' }}')">
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                                 {{ $project->order_no }}
                             </td>
@@ -120,11 +124,15 @@
             </table>
         </div>
     </div>
-@else
+</div>
+
+<div x-show="$store.projectsView.mode !== 'table'">
     {{-- Grid View --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
     @forelse (($projects ?? collect()) as $project)
-        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-4 hover:shadow-md transition-shadow duration-200"
+             data-status="{{ $project->status ?? 'draft' }}"
+             x-show="$store.projectsFilter.matches('{{ $project->status ?? 'draft' }}')">
             {{-- Status Badge --}}
             <div class="mb-3">
                 @php
@@ -263,7 +271,16 @@
             </div>
         @endforelse
     </div>
-@endif
+</div>
+
+{{-- Shown when every row on this page is filtered out client-side --}}
+<div x-show="$store.projectsFilter.status !== '' && $store.projectsFilter.visibleCount() === 0" x-cloak>
+    <div class="text-center py-12 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No projects with this status</h3>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Try selecting a different status filter.</p>
+    </div>
+</div>
 
 {{-- Pagination --}}
 @if(isset($projects) && method_exists($projects, 'links'))
