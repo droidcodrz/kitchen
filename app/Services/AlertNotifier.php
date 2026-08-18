@@ -7,6 +7,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class AlertNotifier
@@ -48,18 +49,39 @@ class AlertNotifier
 
         $sent = 0;
 
+        // A broken mail transport (bad SMTP config, host unreachable, etc.)
+        // must not turn an already-successful action (status change, item
+        // created, restore, ...) into a 500 for the user - this call always
+        // happens after that action's own database write already committed.
+        // Log and move on to the next recipient instead of throwing.
         foreach ($users as $user) {
             if ($shouldSkip && $shouldSkip($user)) {
                 continue;
             }
 
-            $user->notify($notification);
-            $sent++;
+            try {
+                $user->notify($notification);
+                $sent++;
+            } catch (\Throwable $e) {
+                Log::error('Failed to send alert notification to user', [
+                    'alert_type' => $alertType,
+                    'user_id' => $user->id,
+                    'exception' => $e->getMessage(),
+                ]);
+            }
         }
 
         foreach ($extraEmails as $email) {
-            NotificationFacade::route('mail', $email)->notify($notification);
-            $sent++;
+            try {
+                NotificationFacade::route('mail', $email)->notify($notification);
+                $sent++;
+            } catch (\Throwable $e) {
+                Log::error('Failed to send alert notification to extra email', [
+                    'alert_type' => $alertType,
+                    'email' => $email,
+                    'exception' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $sent;

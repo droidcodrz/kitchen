@@ -4,6 +4,7 @@ namespace App\Models\Concerns;
 
 use App\Models\ActivityLog;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Support\Facades\Log;
 
 trait HasActivityLog
 {
@@ -32,14 +33,27 @@ trait HasActivityLog
      */
     protected function logActivity(string $action, array $new = [], array $old = []): void
     {
-        ActivityLog::create([
-            'user_id' => auth()->id(),
-            'action' => $action,
-            'subject_type' => get_class($this),
-            'subject_id' => $this->id,
-            'properties' => !empty($new) || !empty($old) ? ['old' => $old, 'new' => $new] : null,
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent(),
-        ]);
+        // Activity logging is a side effect of the real write (create/update/
+        // delete/restore), which has already committed by the time this model
+        // event fires - a failure here (bad JSON, DB hiccup, etc.) must not
+        // turn that already-successful action into a 500 for the user.
+        try {
+            ActivityLog::create([
+                'user_id' => auth()->id(),
+                'action' => $action,
+                'subject_type' => get_class($this),
+                'subject_id' => $this->id,
+                'properties' => !empty($new) || !empty($old) ? ['old' => $old, 'new' => $new] : null,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Failed to write activity log', [
+                'action' => $action,
+                'subject_type' => get_class($this),
+                'subject_id' => $this->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 }
