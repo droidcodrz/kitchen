@@ -76,4 +76,26 @@ class UpdateProjectRequest extends FormRequest
             'attachments.*' => ['file', 'max:102400', 'mimes:pdf,png,jpg,jpeg,dwg,dxf,doc,docx,mp4,mov,avi,webm,mkv'], // 100MB max per file, videos included
         ];
     }
+
+    /**
+     * A project needs at least one real thing on it - either a manufactured
+     * Product or a directly-attached Inventory Item (or both). The form
+     * always renders one blank row of each by default, so it's easy to
+     * submit with neither ever actually filled in - block that rather than
+     * silently leaving a project with no equipment at all.
+     */
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator) {
+            $hasProduct = collect($this->input('products', []))
+                ->contains(fn ($row) => !empty($row['product_id'] ?? null));
+
+            $hasInventoryItem = collect($this->input('inventory_items', []))
+                ->contains(fn ($row) => !empty($row['inventory_item_id'] ?? null));
+
+            if (!$hasProduct && !$hasInventoryItem) {
+                $validator->errors()->add('products', 'Select at least one product or inventory item for this project.');
+            }
+        });
+    }
 }
