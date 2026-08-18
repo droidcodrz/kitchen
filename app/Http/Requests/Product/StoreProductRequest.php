@@ -53,7 +53,7 @@ class StoreProductRequest extends FormRequest
             'material_ids' => ['nullable', 'array'],
             'material_ids.*' => ['exists:inventory_items,id'],
             'material_quantities' => ['nullable', 'array'],
-            'material_quantities.*' => ['nullable', 'numeric', 'min:0.01'],
+            'material_quantities.*' => ['nullable', 'numeric', 'min:0.01', 'max:999999'],
         ];
     }
 }

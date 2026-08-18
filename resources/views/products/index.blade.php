@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('products.store') }}" class="space-y-4">
+            <form method="POST" action="{{ route('products.store') }}" class="space-y-4" @submit="if (submitting) { $event.preventDefault(); return; } submitting = true">
                 @csrf
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,10 +218,10 @@
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">Select the inventory items needed to produce this product, and how many units of each are consumed per unit built.</p>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-48 overflow-y-auto p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
                         @foreach($inventoryItems ?? [] as $item)
-                            <label class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition">
-                                <input type="checkbox" name="material_ids[]" value="{{ $item->id }}" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500" />
+                            <label x-data="{ checked: false }" class="flex items-center gap-2 p-2 rounded hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition">
+                                <input type="checkbox" name="material_ids[]" value="{{ $item->id }}" x-model="checked" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500" />
                                 <span class="flex-1 min-w-0 text-sm text-gray-700 dark:text-gray-300 truncate">{{ $item->name }}</span>
-                                <input type="number" name="material_quantities[{{ $item->id }}]" min="0.01" step="0.01" value="1" title="Quantity required per unit built" class="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent" />
+                                <input type="number" name="material_quantities[{{ $item->id }}]" min="0.01" max="999999" step="0.01" value="1" :disabled="!checked" :required="checked" title="Quantity required per unit built" class="w-20 px-2 py-1 text-xs border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-1 focus:ring-blue-500 focus:border-transparent disabled:opacity-40 disabled:cursor-not-allowed" />
                             </label>
                         @endforeach
                     </div>
@@ -276,8 +276,8 @@
                     <button type="button" x-on:click="$dispatch('close')" class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-all">
                         Cancel
                     </button>
-                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 rounded-lg transition-all">
-                        Add Product
+                    <button type="submit" :disabled="submitting" class="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-gray-700 hover:bg-gray-800 dark:hover:bg-gray-600 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span x-text="submitting ? 'Adding...' : 'Add Product'"></span>
                     </button>
                 </div>
             </form>
@@ -301,6 +301,7 @@
             categoryId: '',
             generatedLabel: '', generatedDescription: '',
             customFields: [],
+            submitting: false,
 
             async loadCustomFields() {
                 if (!this.categoryId) {

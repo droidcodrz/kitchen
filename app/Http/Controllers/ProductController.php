@@ -108,16 +108,7 @@ class ProductController extends Controller
 
         $data['slug'] = Str::slug($data['name']);
 
-        if (empty($data['sku'])) {
-            $data['sku'] = $data['item_label'];
-            $suffix = 1;
-            while (Product::where('sku', $data['sku'])->exists()) {
-                $data['sku'] = $data['item_label'] . '-' . $suffix;
-                $suffix++;
-            }
-        }
-
-        $product = Product::create($data);
+        $product = $this->createProductRetryingOnSkuCollision($data);
 
         if (!empty($data['material_ids'])) {
             $product->requiredMaterials()->sync(
@@ -194,11 +185,15 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        if (array_key_exists('material_ids', $data)) {
-            $product->requiredMaterials()->sync(
-                $this->buildMaterialSyncData($data['material_ids'] ?? [], $request->input('material_quantities', []))
-            );
-        }
+        // The Required Materials checklist is always rendered on this form
+        // (never conditionally hidden), so always sync it to whatever's
+        // checked now - including nothing. Unchecked HTML checkboxes submit
+        // no field at all, so guarding this on "was material_ids present in
+        // the request" meant unchecking every material silently failed to
+        // detach them: the sync call never ran.
+        $product->requiredMaterials()->sync(
+            $this->buildMaterialSyncData($data['material_ids'] ?? [], $request->input('material_quantities', []))
+        );
 
         if ($request->has('custom_fields')) {
             foreach ($request->input('custom_fields', []) as $fieldId => $value) {
@@ -215,6 +210,37 @@ class ProductController extends Controller
 
         return redirect()->route('products.show', $product)
             ->with('success', 'Product updated successfully.');
+    }
+
+    /**
+     * Auto-generate a unique SKU (if none was submitted) and create the
+     * product, retrying with the next suffix if a concurrent request (e.g.
+     * a double-clicked "Add Product") already took the SKU we checked for
+     * a moment ago - the exists() check and the insert aren't atomic, so
+     * that race is otherwise a real 500 on the second of two near-
+     * simultaneous submits, not just a theoretical one.
+     */
+    private function createProductRetryingOnSkuCollision(array $data): Product
+    {
+        $userSuppliedSku = !empty($data['sku']);
+
+        for ($attempt = 0; $attempt < 5; $attempt++) {
+            if (!$userSuppliedSku) {
+                $data['sku'] = $attempt === 0
+                    ? $data['item_label']
+                    : $data['item_label'] . '-' . $attempt;
+            }
+
+            try {
+                return Product::create($data);
+            } catch (\Illuminate\Database\QueryException $e) {
+                $isDuplicateSku = $e->getCode() === '23000' && str_contains($e->getMessage(), 'sku');
+
+                if ($userSuppliedSku || !$isDuplicateSku || $attempt === 4) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     /**
