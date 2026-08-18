@@ -46,8 +46,17 @@
                 const section = document.getElementById('update-password');
                 if (section) {
                     section.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    const firstInput = section.querySelector('input');
-                    if (firstInput) firstInput.focus();
+
+                    // Skip the hidden CSRF and method-spoofing inputs that come
+                    // first in the form - focusing one of those is a no-op and
+                    // leaves the caret on body, so the section looks unfocused.
+                    const firstInput = section.querySelector('input:not([type=hidden])');
+
+                    // Focus after the smooth scroll settles, otherwise the
+                    // in-flight scroll can be cancelled or jump back.
+                    if (firstInput) {
+                        setTimeout(() => firstInput.focus({ preventScroll: true }), 400);
+                    }
                 }
             }
         }

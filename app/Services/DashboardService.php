@@ -6,6 +6,7 @@ use App\Models\InventoryItem;
 use App\Models\Project;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class DashboardService
 {
@@ -40,12 +41,18 @@ class DashboardService
      */
     public function getChartData(int $year): array
     {
-        $monthlyData = Project::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+        $monthlyData = Project::selectRaw($this->monthExpression() . ' as month, COUNT(*) as count')
             ->whereYear('created_at', $year)
             ->groupBy('month')
             ->orderBy('month')
             ->pluck('count', 'month')
             ->toArray();
+
+        // SQLite returns the month zero-padded ('01'), MySQL returns an int.
+        $monthlyData = array_combine(
+            array_map('intval', array_keys($monthlyData)),
+            array_values($monthlyData)
+        );
 
         $data = [];
         for ($i = 1; $i <= 12; $i++) {
@@ -63,11 +70,23 @@ class DashboardService
      */
     public function getMonthlyAnalytics(int $year): Collection
     {
-        return Project::selectRaw('MONTH(created_at) as month, status, COUNT(*) as count')
+        return Project::selectRaw($this->monthExpression() . ' as month, status, COUNT(*) as count')
             ->whereYear('created_at', $year)
             ->groupBy('month', 'status')
             ->orderBy('month')
             ->get();
+    }
+
+    /**
+     * MONTH() is MySQL-only - SQLite has no such function and errors outright,
+     * which takes the whole dashboard down with a 500. Pick the expression that
+     * matches the connection actually in use.
+     */
+    private function monthExpression(): string
+    {
+        return DB::connection()->getDriverName() === 'sqlite'
+            ? "strftime('%m', created_at)"
+            : 'MONTH(created_at)';
     }
 
     /**

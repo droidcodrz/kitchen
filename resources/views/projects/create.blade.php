@@ -159,18 +159,21 @@
             </div>
 
             {{-- Timeline --}}
-            <div>
+            {{-- The two dates constrain each other in the picker itself, so an
+                 out-of-order pair can't be chosen in the first place. The same
+                 rule is enforced again server-side. --}}
+            <div x-data="{ proposal: @js(old('proposal_signed_date')), delivery: @js(old('delivery_date')) }">
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Timeline</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <x-input-label for="proposal_signed_date" :value="__('Proposal Signed Date')" />
-                        <x-text-input id="proposal_signed_date" name="proposal_signed_date" type="date" class="mt-1 block w-full" :value="old('proposal_signed_date')" />
+                        <x-text-input id="proposal_signed_date" name="proposal_signed_date" type="date" class="mt-1 block w-full" x-model="proposal" ::max="delivery || null" />
                         <x-input-error :messages="$errors->get('proposal_signed_date')" class="mt-2" />
                     </div>
 
                     <div>
                         <x-input-label for="delivery_date" :value="__('Delivery Date')" />
-                        <x-text-input id="delivery_date" name="delivery_date" type="date" class="mt-1 block w-full" :value="old('delivery_date')" />
+                        <x-text-input id="delivery_date" name="delivery_date" type="date" class="mt-1 block w-full" x-model="delivery" ::min="proposal || null" />
                         <x-input-error :messages="$errors->get('delivery_date')" class="mt-2" />
                     </div>
 
