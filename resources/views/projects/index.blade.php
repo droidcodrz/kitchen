@@ -5,37 +5,61 @@
          swaps already-rendered markup instead of re-fetching the page. The
          choice is remembered across navigations via localStorage. --}}
     <script>
-        document.addEventListener('alpine:init', () => {
-            if (Alpine.store('projectsView')) return;
+        (function () {
+            function currentStatusFromUrl() {
+                return new URL(window.location).searchParams.get('status') || '';
+            }
 
-            Alpine.store('projectsView', {
-                mode: localStorage.getItem('projectsView') || @json($view ?? 'grid'),
-                set(mode) {
-                    this.mode = mode;
-                    localStorage.setItem('projectsView', mode);
-                },
-            });
+            function registerProjectStores() {
+                if (!window.Alpine) return;
 
-            Alpine.store('projectsFilter', {
-                status: @json(request('status', '')),
-                matches(status) {
-                    return this.status === '' || this.status === status;
-                },
-                set(status) {
-                    this.status = status;
-                    // Keep the URL shareable/reloadable without navigating.
-                    const url = new URL(window.location);
-                    status ? url.searchParams.set('status', status) : url.searchParams.delete('status');
-                    window.history.replaceState({}, '', url);
-                },
-                visibleCount() {
-                    return document.querySelectorAll('[data-status]').length === 0
-                        ? 0
-                        : Array.from(document.querySelectorAll('[data-status]'))
-                            .filter(el => this.matches(el.dataset.status)).length;
-                },
-            });
-        });
+                if (!Alpine.store('projectsView')) {
+                    Alpine.store('projectsView', {
+                        mode: localStorage.getItem('projectsView') || @json($view ?? 'grid'),
+                        set(mode) {
+                            this.mode = mode;
+                            localStorage.setItem('projectsView', mode);
+                        },
+                    });
+                }
+
+                if (!Alpine.store('projectsFilter')) {
+                    Alpine.store('projectsFilter', {
+                        status: currentStatusFromUrl(),
+                        matches(status) {
+                            return this.status === '' || this.status === status;
+                        },
+                        set(status) {
+                            this.status = status;
+                            // Keep the URL shareable/reloadable without navigating.
+                            const url = new URL(window.location);
+                            status ? url.searchParams.set('status', status) : url.searchParams.delete('status');
+                            window.history.replaceState({}, '', url);
+                        },
+                        visibleCount() {
+                            return Array.from(document.querySelectorAll('[data-status]'))
+                                .filter(el => this.matches(el.dataset.status)).length;
+                        },
+                    });
+                } else {
+                    // Already registered from an earlier visit - re-sync to the
+                    // status this page was opened with.
+                    Alpine.store('projectsFilter').status = currentStatusFromUrl();
+                }
+            }
+
+            // alpine:init fires only on Alpine's first boot. Arriving here via
+            // wire:navigate re-runs this script with Alpine already running, so
+            // that event never comes again - registering only on it left the
+            // stores undefined, every x-show threw, and the whole list vanished.
+            if (window.Alpine) {
+                registerProjectStores();
+            } else {
+                document.addEventListener('alpine:init', registerProjectStores);
+            }
+
+            document.addEventListener('livewire:navigated', registerProjectStores);
+        })();
     </script>
 
     <!-- Page Header -->
@@ -50,20 +74,20 @@
                     <!-- View Toggle: purely client-side, no request on switch -->
                     <div class="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
                         <button type="button"
-                                @click="$store.projectsView.set('grid')"
+                                @click="$store.projectsView && $store.projectsView.set('grid')"
                                 class="p-2 rounded transition-colors"
-                                :class="$store.projectsView.mode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
+                                :class="$store.projectsView && $store.projectsView.mode === 'grid' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
                                 title="Grid View">
-                            <svg class="w-5 h-5" :class="$store.projectsView.mode === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" :class="$store.projectsView && $store.projectsView.mode === 'grid' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                             </svg>
                         </button>
                         <button type="button"
-                                @click="$store.projectsView.set('table')"
+                                @click="$store.projectsView && $store.projectsView.set('table')"
                                 class="p-2 rounded transition-colors"
-                                :class="$store.projectsView.mode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
+                                :class="$store.projectsView && $store.projectsView.mode === 'table' ? 'bg-white dark:bg-gray-700 shadow-sm' : ''"
                                 title="Table View">
-                            <svg class="w-5 h-5" :class="$store.projectsView.mode === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5" :class="$store.projectsView && $store.projectsView.mode === 'table' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                             </svg>
                         </button>
@@ -117,9 +141,9 @@
             <div class="flex items-center gap-2 overflow-x-auto pb-2">
                 @foreach($statuses as $value => $label)
                     <button type="button"
-                            @click="$store.projectsFilter.set('{{ $value }}')"
+                            @click="$store.projectsFilter && $store.projectsFilter.set('{{ $value }}')"
                             class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border"
-                            :class="$store.projectsFilter.status === '{{ $value }}'
+                            :class="$store.projectsFilter && $store.projectsFilter.status === '{{ $value }}'
                                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
                                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                         {{ $label }}
