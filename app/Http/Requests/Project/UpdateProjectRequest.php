@@ -44,7 +44,12 @@ class UpdateProjectRequest extends FormRequest
             // every valid status or every edit to an in-progress project fails.
             'status' => ['required', 'in:draft,confirmed,design,in_production,delayed,inspection,finished,delivered'],
             'project_manager_id' => ['nullable', 'exists:users,id'],
-            'proposal_signed_date' => ['nullable', 'date'],
+            'proposal_signed_date' => ['nullable', 'date', function ($attribute, $value, $fail) {
+                $delivery = $this->input('delivery_date');
+                if ($delivery && \Carbon\Carbon::parse($value)->gt(\Carbon\Carbon::parse($delivery))) {
+                    $fail('The proposal date must not be after the delivery date.');
+                }
+            }],
             'delivery_date' => ['nullable', 'date'],
             'production_deadline' => ['nullable', 'date'],
             'description' => ['nullable'],

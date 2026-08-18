@@ -36,7 +36,16 @@ class StoreProjectRequest extends FormRequest
             'name' => ['required', 'max:191', 'unique:projects,name'],
             'client_id' => ['required', 'exists:clients,id'],
             'status' => ['required', 'in:draft,confirmed'],
-            'proposal_signed_date' => ['nullable', 'date'],
+            // before_or_equal:delivery_date isn't used here - it fails validation
+            // outright whenever delivery_date is left blank at all (both dates are
+            // legitimately optional, set independently), not just when it's actually
+            // before the proposal date. Only compare when both are present.
+            'proposal_signed_date' => ['nullable', 'date', function ($attribute, $value, $fail) {
+                $delivery = $this->input('delivery_date');
+                if ($delivery && \Carbon\Carbon::parse($value)->gt(\Carbon\Carbon::parse($delivery))) {
+                    $fail('The proposal date must not be after the delivery date.');
+                }
+            }],
             'delivery_date' => ['nullable', 'date'],
             'production_deadline' => ['nullable', 'date'],
             'description' => ['nullable'],

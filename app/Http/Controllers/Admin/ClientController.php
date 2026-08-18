@@ -75,6 +75,15 @@ class ClientController extends Controller
      */
     public function destroy(Client $client): RedirectResponse
     {
+        $activeProjectsCount = $client->projects()
+            ->whereNotIn('status', ['delivered', 'finished'])
+            ->count();
+
+        if ($activeProjectsCount > 0) {
+            return redirect()->route('admin.clients.index')
+                ->with('error', "Cannot delete this client: {$activeProjectsCount} active project(s) are still linked to it. Complete or reassign those projects first.");
+        }
+
         $client->delete();
 
         return redirect()->route('admin.clients.index')

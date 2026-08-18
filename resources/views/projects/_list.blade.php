@@ -146,7 +146,7 @@
             </div>
 
             {{-- Project Name --}}
-            <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1">
+            <h3 class="text-base font-semibold text-gray-900 dark:text-white mb-1 truncate" title="{{ $project->name }}">
                 {{ $project->name }}
             </h3>
 
