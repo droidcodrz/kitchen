@@ -22,13 +22,13 @@
                 <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">Basic Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <x-input-label for="name" :value="__('Project Name')" />
+                        <x-input-label for="name" :value="__('Project Name')" :required="true" />
                         <x-text-input id="name" name="name" type="text" maxlength="191" class="mt-1 block w-full" :value="old('name', $project->name)" required autofocus />
                         <x-input-error :messages="$errors->get('name')" class="mt-2" />
                     </div>
 
                     <div>
-                        <x-input-label for="client_id" :value="__('Client')" />
+                        <x-input-label for="client_id" :value="__('Client')" :required="true" />
                         <select id="client_id" name="client_id" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                             <option value="">Select Client</option>
                             @foreach($clients ?? [] as $client)

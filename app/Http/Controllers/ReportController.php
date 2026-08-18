@@ -31,7 +31,7 @@ class ReportController extends Controller
     {
         $this->authorizeView();
 
-        $scope = $request->input('scope', 'active');
+        $scope = $request->input('scope', 'all');
 
         $query = Project::with(['client', 'projectManager']);
 

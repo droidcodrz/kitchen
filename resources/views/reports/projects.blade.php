@@ -27,7 +27,7 @@
         {{-- Scope Tabs --}}
         <div class="mb-6">
             <div class="flex items-center gap-2">
-                @foreach(['active' => 'Active', 'completed' => 'Completed', 'all' => 'All'] as $value => $label)
+                @foreach(['all' => 'All', 'active' => 'Active', 'completed' => 'Completed'] as $value => $label)
                     <a href="{{ route('reports.projects', ['scope' => $value]) }}"
                        wire:navigate
                        class="whitespace-nowrap px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border
