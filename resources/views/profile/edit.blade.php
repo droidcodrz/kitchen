@@ -20,7 +20,7 @@
                 </div>
             </div>
 
-            <div class="p-4 sm:p-8 bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800 sm:rounded-lg">
+            <div id="update-password" class="p-4 sm:p-8 bg-white dark:bg-gray-900 shadow-sm border border-gray-200 dark:border-gray-800 sm:rounded-lg scroll-mt-6">
                 <div class="max-w-xl">
                     @include('profile.partials.update-password-form')
                 </div>
@@ -33,4 +33,29 @@
             </div>
         </div>
     </div>
+
+    <script>
+        // Jump straight to and focus the password section when arriving via
+        // the Settings page "Change Password" link (#update-password), instead
+        // of landing at the top of the whole Profile page. Bound to both a
+        // genuine first load and livewire:navigated (wire:navigate SPA nav) -
+        // DOMContentLoaded alone only fires once and never again on SPA
+        // navigation between pages.
+        function focusPasswordSectionIfLinked() {
+            if (window.location.hash === '#update-password') {
+                const section = document.getElementById('update-password');
+                if (section) {
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const firstInput = section.querySelector('input');
+                    if (firstInput) firstInput.focus();
+                }
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', focusPasswordSectionIfLinked);
+        } else {
+            focusPasswordSectionIfLinked();
+        }
+        document.addEventListener('livewire:navigated', focusPasswordSectionIfLinked);
+    </script>
 </x-app-layout>

@@ -13,7 +13,7 @@
     </x-slot>
 
     <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg">
-        <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" class="p-6 space-y-8">
+        <form method="POST" action="{{ route('projects.store') }}" enctype="multipart/form-data" class="p-6 space-y-8" id="create-project-form">
             @csrf
 
             {{-- Basic Info --}}
@@ -283,5 +283,16 @@
                 }
             };
         }
+
+        // wire:navigate can restore this page from its own cache when you
+        // navigate back to it (e.g. after clicking Cancel then New Project
+        // again) - that includes whatever the user had typed before leaving,
+        // not just what the server originally rendered. Force a genuinely
+        // blank form every time this page is actually the one being landed
+        // on, since it's a "start fresh" form, not a draft to resume.
+        document.addEventListener('livewire:navigated', () => {
+            const form = document.getElementById('create-project-form');
+            if (form) form.reset();
+        });
     </script>
 </x-app-layout>
