@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="title">Edit Category</x-slot>
+
     <x-slot name="header">
         <div class="flex items-center">
             <a href="{{ route('admin.categories.index') }}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3">

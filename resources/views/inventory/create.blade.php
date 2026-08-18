@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="title">Add Inventory Item</x-slot>
+
     <x-slot name="header">
         <div class="flex items-center">
             <a href="{{ route('inventory.index') }}" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 mr-3">

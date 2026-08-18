@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="title">Storage Locations</x-slot>
+
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <div class="flex items-center">

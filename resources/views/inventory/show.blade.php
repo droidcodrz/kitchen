@@ -1,4 +1,6 @@
 <x-app-layout>
+    <x-slot name="title">Inventory Item Details</x-slot>
+
     <x-slot name="header">
         <div class="flex items-center justify-between">
             <div class="flex items-center">
