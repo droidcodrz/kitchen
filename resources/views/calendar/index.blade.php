@@ -9,8 +9,23 @@
                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Project deadlines, deliveries, and scheduled events</p>
             </div>
 
-            <!-- Color Legend -->
-            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4">
+            <!-- Event type legend: colour alone never distinguished a delivery
+                 from a production deadline, since delivery colours track the
+                 project's status. Every title is prefixed with its type. -->
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Event types:</span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">Delivery:</span> project delivery date
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
+                    <span class="font-mono font-semibold text-gray-800 dark:text-gray-200">Deadline:</span> production deadline
+                </span>
+                <span class="text-xs text-gray-500 dark:text-gray-500 italic">Hover any event to read its full title.</span>
+            </div>
+
+            <!-- Status Colour Legend -->
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 mt-3">
+                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">Status colours:</span>
                 <span class="inline-flex items-center gap-1.5 text-xs text-gray-600 dark:text-gray-400">
                     <span class="w-2.5 h-2.5 rounded-full" style="background-color: #3b82f6"></span> Confirmed
                 </span>
@@ -132,12 +147,22 @@
                     url: event.url || null,
                     color: event.color || null,
                     allDay: event.all_day ?? true,
+                    extendedProps: { eventType: event.event_type || null },
                 })),
                 eventClick: function (info) {
                     if (info.event.url) {
                         info.jsEvent.preventDefault();
                         window.location.href = info.event.url;
                     }
+                },
+                // A month cell is too narrow for most titles, so give every
+                // event a native tooltip carrying the full text and its type -
+                // the label can still clip, but nothing is unreadable.
+                eventDidMount: function (info) {
+                    const type = info.event.extendedProps.eventType;
+                    info.el.title = type
+                        ? `${info.event.title}\n(${type})`
+                        : info.event.title;
                 },
                 height: 'auto',
                 navLinks: true,

@@ -20,6 +20,7 @@ class CalendarController extends Controller
                 return [
                     'id' => 'event-' . $event->id,
                     'title' => $event->title,
+                    'event_type' => 'Custom Event',
                     'start' => $event->start_date->toIso8601String(),
                     'end' => $event->end_date?->toIso8601String(),
                     'color' => $event->color ?? '#6366f1',
@@ -36,7 +37,12 @@ class CalendarController extends Controller
             ->map(function ($project) {
                 return [
                     'id' => 'delivery-' . $project->id,
-                    'title' => $project->name . ' - Delivery',
+                    // Event type leads the title: in a month cell the text is
+                    // clipped from the right, so a trailing "- Delivery" was
+                    // always the first thing to disappear - which is exactly
+                    // what tells the two event types apart.
+                    'title' => 'Delivery: ' . $project->name,
+                    'event_type' => 'Delivery Date',
                     'start' => $project->delivery_date->toIso8601String(),
                     'end' => null,
                     'color' => match ($project->status) {
@@ -59,7 +65,8 @@ class CalendarController extends Controller
             ->map(function ($project) {
                 return [
                     'id' => 'deadline-' . $project->id,
-                    'title' => $project->name . ' - Production Deadline',
+                    'title' => 'Deadline: ' . $project->name,
+                    'event_type' => 'Production Deadline',
                     'start' => $project->production_deadline->toIso8601String(),
                     'end' => null,
                     'color' => $project->production_deadline->isPast() ? '#ef4444' : '#10b981',
