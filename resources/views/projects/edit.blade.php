@@ -244,7 +244,7 @@
                             </label>
                             <p class="pl-1">or drag and drop</p>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">PDF, images, CAD, Word docs, or video - up to 100MB each</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">PDF, images, CAD, Word docs, or video - up to {{ $uploadMaxLabel }} each, {{ $postMaxLabel }} total</p>
                     </div>
                 </div>
                 <template x-if="error">
@@ -326,7 +326,15 @@
     <script>
         function attachmentUpload() {
             const allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg', 'dwg', 'dxf', 'doc', 'docx', 'mp4', 'mov', 'avi', 'webm', 'mkv'];
-            const maxBytes = 100 * 1024 * 1024; // matches the 100MB server-side limit
+
+            // The real ceilings PHP will enforce on this server. Checking against
+            // these (rather than a hardcoded number) is what keeps an oversized
+            // upload from being sent at all - once it is sent, PHP aborts the
+            // request body and the browser just shows a connection error.
+            const maxBytes = @json($uploadMaxBytes);
+            const maxTotalBytes = @json($postMaxBytes);
+            const maxLabel = @json($uploadMaxLabel);
+            const maxTotalLabel = @json($postMaxLabel);
 
             return {
                 dragging: false,
@@ -337,20 +345,25 @@
                     const files = Array.from(fileList);
                     const valid = [];
                     const rejected = [];
+                    let total = 0;
 
                     for (const file of files) {
                         const ext = file.name.split('.').pop().toLowerCase();
+
                         if (!allowedExtensions.includes(ext)) {
                             rejected.push(`${file.name} (unsupported file type)`);
                         } else if (file.size > maxBytes) {
-                            rejected.push(`${file.name} (over 100MB)`);
+                            rejected.push(`${file.name} (over ${maxLabel})`);
+                        } else if (total + file.size > maxTotalBytes) {
+                            rejected.push(`${file.name} (would exceed the ${maxTotalLabel} total)`);
                         } else {
+                            total += file.size;
                             valid.push(file);
                         }
                     }
 
                     this.error = rejected.length > 0
-                        ? `Not added - ${rejected.join(', ')}. Allowed: ${allowedExtensions.join(', ')}, up to 100MB each.`
+                        ? `Not added - ${rejected.join(', ')}. Allowed: ${allowedExtensions.join(', ')}, up to ${maxLabel} each and ${maxTotalLabel} in total.`
                         : '';
                     this.acceptedNames = valid.map(f => f.name);
 

@@ -115,6 +115,9 @@ class UpdateProjectRequest extends FormRequest
             'inventory_items.*.inventory_item_id.exists' => 'The selected inventory item no longer exists.',
             'inventory_items.*.quantity.required' => 'Enter a quantity for each inventory item line.',
             'inventory_items.*.quantity.min' => 'Inventory item quantity must be greater than 0.',
+            'attachments.*.mimes' => 'Each attachment must be a PDF, image, CAD, Word, or video file.',
+            'attachments.*.max' => 'Each attachment must be smaller than 100MB.',
+            'attachments.*.file' => 'One of the attachments could not be read as a file. Please try selecting it again.',
         ];
     }
 

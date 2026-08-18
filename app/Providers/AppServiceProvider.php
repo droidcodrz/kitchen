@@ -16,6 +16,7 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +37,48 @@ class AppServiceProvider extends ServiceProvider
         $this->registerPolicies();
         $this->configureRateLimiting();
         $this->registerGates();
+        $this->shareUploadLimits();
+    }
+
+    /**
+     * Expose PHP's real upload ceilings to every view, so client-side file
+     * validation rejects what this server would refuse anyway. Without them the
+     * form can only guess, and anything over the limit is aborted mid-body by
+     * PHP - which reaches the user as a bare connection error, not a message.
+     */
+    protected function shareUploadLimits(): void
+    {
+        $toBytes = static function (string $value): int {
+            $value = trim($value);
+
+            if ($value === '') {
+                return 0;
+            }
+
+            $bytes = (int) $value;
+
+            return match (strtolower(substr($value, -1))) {
+                'g' => $bytes * 1024 ** 3,
+                'm' => $bytes * 1024 ** 2,
+                'k' => $bytes * 1024,
+                default => $bytes,
+            };
+        };
+
+        $uploadMax = $toBytes((string) ini_get('upload_max_filesize'));
+        $postMax = $toBytes((string) ini_get('post_max_size'));
+
+        // A single file can never exceed the whole-request ceiling either.
+        $uploadMax = $postMax > 0 ? min($uploadMax ?: $postMax, $postMax) : $uploadMax;
+
+        $label = static fn (int $bytes): string => $bytes >= 1024 ** 3
+            ? round($bytes / 1024 ** 3, 1) . 'GB'
+            : round($bytes / 1024 ** 2) . 'MB';
+
+        View::share('uploadMaxBytes', $uploadMax);
+        View::share('postMaxBytes', $postMax);
+        View::share('uploadMaxLabel', $label($uploadMax));
+        View::share('postMaxLabel', $label($postMax));
     }
 
     /**
