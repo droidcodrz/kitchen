@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Guarded so the migration is safe to re-run against a database that
+        // already carries this column.
+        if (Schema::hasColumn('products', 'folder_id')) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             $table->foreignId('folder_id')->nullable()->after('category_id')->constrained('product_folders')->nullOnDelete();
             $table->index('folder_id');

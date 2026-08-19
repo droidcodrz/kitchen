@@ -20,6 +20,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (!Schema::hasColumn('inventory_items', 'item_type')) {
+            return;
+        }
+
         Schema::table('inventory_items', function (Blueprint $table) {
             $table->string('item_type', 100)->nullable(false)->change();
         });

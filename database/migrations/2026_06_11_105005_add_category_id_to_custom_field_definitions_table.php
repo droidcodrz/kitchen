@@ -11,6 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Guarded so the migration is safe to re-run against a database that
+        // already carries these columns.
+        if (Schema::hasColumn('custom_field_definitions', 'category_id')) {
+            return;
+        }
+
         Schema::table('custom_field_definitions', function (Blueprint $table) {
             $table->unsignedBigInteger('category_id')->nullable()->after('entity_type');
             $table->string('applies_to_item_types', 500)->nullable()->after('category_id');
