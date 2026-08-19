@@ -222,8 +222,8 @@
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Equipment</h3>
                     <div x-data="{ products: [{product: '', quantity: 1}] }">
                         <template x-for="(product, index) in products" :key="index">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
-                                <div>
+                            <div class="flex items-end gap-3 mb-3">
+                                <div class="flex-1">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Product</label>
                                     <select :name="'products['+index+'][product_id]'" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                         <option value="">Select a product</option>
@@ -233,13 +233,55 @@
                                     </select>
                                 </div>
 
-                                <div>
+                                <div class="w-32">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">No of Product</label>
                                     <input type="number" :name="'products['+index+'][quantity]'" min="1" x-model="product.quantity" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                 </div>
+
+                                {{-- Added rows need a way back out, same as the full create form. --}}
+                                <button type="button" @click="products.splice(index, 1)" x-show="products.length > 1"
+                                        title="Remove this line"
+                                        class="mb-1 p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
                             </div>
                         </template>
                         <button type="button" @click="products.push({product: '', quantity: 1})" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                            + Add More
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Additional Inventory Items - the same section the full create
+                     and edit forms carry, so a project started from this modal can
+                     also take raw materials that aren't part of a product. --}}
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Additional Inventory Items</h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Raw materials used or sold directly on this project, outside of any manufactured product - e.g. raw steel sheet.</p>
+                    <div x-data="{ inventoryItems: [{inventory_item_id: '', quantity: 1}] }">
+                        <template x-for="(item, index) in inventoryItems" :key="index">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div class="flex-1">
+                                    <select :name="'inventory_items['+index+'][inventory_item_id]'" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                        <option value="">Select Inventory Item</option>
+                                        @foreach($inventoryItems ?? [] as $inventoryItem)
+                                            <option value="{{ $inventoryItem->id }}">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="w-32">
+                                    <input type="number" :name="'inventory_items['+index+'][quantity]'" min="0.01" step="0.01" x-model="item.quantity" placeholder="Qty" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+
+                                <button type="button" @click="inventoryItems.splice(index, 1)" x-show="inventoryItems.length > 1"
+                                        title="Remove this line"
+                                        class="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </template>
+                        <button type="button" @click="inventoryItems.push({inventory_item_id: '', quantity: 1})" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
                             + Add More
                         </button>
                     </div>

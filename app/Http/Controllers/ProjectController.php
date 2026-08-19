@@ -81,8 +81,11 @@ class ProjectController extends Controller
         $productsList = Product::where('is_active', true)->orderBy('name')->get();
         $clients = Client::where('is_active', true)->orderBy('name')->get();
         $users = User::whereNull('deleted_at')->where('status', 'active')->orderBy('first_name')->get();
+        // The modal offers the same Additional Inventory Items section as the
+        // full create form, so it needs the same list to populate it.
+        $inventoryItems = InventoryItem::where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'unit_of_measure']);
 
-        return view('projects.index', compact('projects', 'productsList', 'clients', 'users', 'view', 'sort', 'direction'));
+        return view('projects.index', compact('projects', 'productsList', 'clients', 'users', 'inventoryItems', 'view', 'sort', 'direction'));
     }
 
     /**
