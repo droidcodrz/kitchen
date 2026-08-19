@@ -1,10 +1,28 @@
-@props(['action', 'title' => 'Confirm Deletion', 'message' => 'Are you sure you want to delete this item? This action cannot be undone.', 'buttonText' => 'Delete', 'buttonClass' => ''])
+@props([
+    'action',
+    'title' => 'Confirm Deletion',
+    'message' => 'Are you sure you want to delete this item? This action cannot be undone.',
+    'buttonText' => 'Delete',
+    'buttonClass' => '',
+    // When deletion isn't allowed, say so on the trigger itself. Opening a
+    // dialog only to present a dead button tells the user nothing they could
+    // not have been told before clicking.
+    'disabled' => false,
+    'disabledReason' => 'This item cannot be deleted.',
+])
 
-<div x-data="{ showModal: false }" {{ $attributes }}>
+<div x-data="{ showModal: false, busy: false }" {{ $attributes }}>
     {{-- Trigger --}}
-    <button @click="showModal = true" type="button" class="{{ $buttonClass ?: 'inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition' }}">
-        {{ $slot }}
-    </button>
+    @if($disabled)
+        <button type="button" disabled title="{{ $disabledReason }}"
+                class="{{ $buttonClass ?: 'inline-flex items-center px-3 py-2 text-sm font-medium transition' }} opacity-40 cursor-not-allowed">
+            {{ $slot }}
+        </button>
+    @else
+        <button @click="showModal = true" type="button" class="{{ $buttonClass ?: 'inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 transition' }}">
+            {{ $slot }}
+        </button>
+    @endif
 
     {{-- Modal Overlay --}}
     <div x-show="showModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
@@ -28,14 +46,24 @@
                     </div>
                 </div>
                 <div class="bg-gray-50 dark:bg-gray-700/50 px-4 py-3 sm:flex sm:flex-row-reverse sm:px-6">
-                    <form method="POST" action="{{ $action }}">
+                    {{-- While the delete is in flight the button says so.
+                         It used to just grey out with a "not allowed" cursor,
+                         which read as "this action is blocked" rather than
+                         "working on it". --}}
+                    <form method="POST" action="{{ $action }}" @submit="busy = true">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto">
-                            {{ $buttonText }}
+                        <button type="submit" :disabled="busy"
+                                class="inline-flex w-full items-center justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto disabled:opacity-75 disabled:cursor-wait">
+                            <svg x-show="busy" x-cloak class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span x-text="busy ? 'Deleting...' : @js($buttonText)">{{ $buttonText }}</span>
                         </button>
                     </form>
-                    <button @click="showModal = false" type="button" class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto">
+                    <button @click="showModal = false" type="button" :disabled="busy"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white dark:bg-gray-800 px-3 py-2 text-sm font-semibold text-gray-900 dark:text-gray-300 shadow-sm ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 sm:mt-0 sm:w-auto disabled:opacity-50">
                         Cancel
                     </button>
                 </div>

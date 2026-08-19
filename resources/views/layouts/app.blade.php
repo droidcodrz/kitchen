@@ -134,11 +134,15 @@
                     // Disable on the next tick: buttons disabled during the
                     // submit event are dropped from the payload, taking any
                     // name/value they carry with them.
+                    // cursor-wait, not cursor-not-allowed: the button is busy
+                    // finishing this submit, not forbidden. The not-allowed
+                    // cursor read as "this action is blocked" and made the
+                    // confirm dialogs look broken while they worked.
                     setTimeout(function () {
                         form.querySelectorAll('button[type=submit], input[type=submit]')
                             .forEach(function (button) {
                                 button.disabled = true;
-                                button.classList.add('opacity-60', 'cursor-not-allowed');
+                                button.classList.add('opacity-75', 'cursor-wait');
                             });
                     }, 0);
                 }
@@ -154,7 +158,7 @@
                         form.querySelectorAll('button[type=submit], input[type=submit]')
                             .forEach(function (button) {
                                 button.disabled = false;
-                                button.classList.remove('opacity-60', 'cursor-not-allowed');
+                                button.classList.remove('opacity-75', 'cursor-wait');
                             });
                     });
                 }
