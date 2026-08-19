@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Re-adding an existing index is an error, not a no-op.
+        if (Schema::hasIndex('products', ['created_at'])) {
+            return;
+        }
+
         Schema::table('products', function (Blueprint $table) {
             $table->index('created_at');
         });

@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Safe to re-run: a database that already has this table
+        // (records lost, restored dump, partial deploy) skips it
+        // instead of aborting the whole run on "table exists".
+        if (Schema::hasTable('permission_role')) {
+            return;
+        }
+
         Schema::create('permission_role', function (Blueprint $table) {
             $table->id();
             $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();

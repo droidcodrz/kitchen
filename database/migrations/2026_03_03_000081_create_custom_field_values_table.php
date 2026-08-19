@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Safe to re-run: a database that already has this table
+        // (records lost, restored dump, partial deploy) skips it
+        // instead of aborting the whole run on "table exists".
+        if (Schema::hasTable('custom_field_values')) {
+            return;
+        }
+
         Schema::create('custom_field_values', function (Blueprint $table) {
             $table->id();
             $table->foreignId('custom_field_definition_id')->constrained('custom_field_definitions')->cascadeOnDelete();

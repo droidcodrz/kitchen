@@ -11,6 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Safe to re-run: a database that already has this table
+        // (records lost, restored dump, partial deploy) skips it
+        // instead of aborting the whole run on "table exists".
+        if (Schema::hasTable('project_team')) {
+            return;
+        }
+
         Schema::create('project_team', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained('projects')->cascadeOnDelete();
