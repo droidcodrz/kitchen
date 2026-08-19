@@ -29,7 +29,15 @@ class InventoryItemController extends Controller
      */
     public function index(Request $request): View
     {
-        $query = InventoryItem::with(['vendor', 'storageLocation']);
+        // Same idea as the products list: flag rows that active projects still
+        // depend on, counting both direct attachment and use via a product's
+        // materials, without a query per row.
+        $closed = InventoryItem::CLOSED_PROJECT_STATUSES;
+        $query = InventoryItem::with(['vendor', 'storageLocation'])
+            ->withCount([
+                'projects as direct_active_count' => fn ($q) => $q->whereNotIn('projects.status', $closed),
+                'products as bom_active_count' => fn ($q) => $q->whereHas('projects', fn ($p) => $p->whereNotIn('projects.status', $closed)),
+            ]);
 
         if ($request->filled('item_type')) {
             $query->where('item_type', $request->input('item_type'));
@@ -218,6 +226,13 @@ class InventoryItemController extends Controller
      */
     public function destroy(InventoryItem $inventoryItem): RedirectResponse
     {
+        $activeProjectsCount = $inventoryItem->activeProjectsCount();
+
+        if ($activeProjectsCount > 0) {
+            return redirect()->route('inventory.index')
+                ->with('error', "Cannot delete this item: {$activeProjectsCount} active project(s) still depend on it, directly or through a product's materials. Complete or detach those projects first.");
+        }
+
         $inventoryItem->delete();
 
         return redirect()->route('inventory.index')

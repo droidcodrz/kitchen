@@ -173,6 +173,18 @@ class Product extends Model
     }
 
     /**
+     * How many still-running projects include this product. Those projects
+     * have already reserved or consumed stock against its bill of materials,
+     * so it must not be deleted while they are open.
+     */
+    public function activeProjectsCount(): int
+    {
+        return $this->projects()
+            ->whereNotIn('projects.status', InventoryItem::CLOSED_PROJECT_STATUSES)
+            ->count();
+    }
+
+    /**
      * Get custom field values for this product.
      */
     public function customFieldValues(): \Illuminate\Database\Eloquent\Relations\HasMany

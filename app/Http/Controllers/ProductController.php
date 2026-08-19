@@ -32,7 +32,10 @@ class ProductController extends Controller
         // and 'folder' were being eager-loaded here too but are never accessed by
         // products/_main.blade.php - that was a many-to-many pivot query and a belongsTo
         // load, wasted on every product on every page.
-        $query = Product::with('category');
+        // Count the still-running projects each product is on, so the list
+        // can show its delete control as blocked without running a query per row.
+        $query = Product::with('category')
+            ->withCount(['projects as active_projects_count' => fn ($q) => $q->whereNotIn('projects.status', \App\Models\InventoryItem::CLOSED_PROJECT_STATUSES)]);
 
         // Filter by folder
         if ($request->has('folder')) {
@@ -302,6 +305,13 @@ class ProductController extends Controller
      */
     public function destroy(Product $product): RedirectResponse
     {
+        $activeProjectsCount = $product->activeProjectsCount();
+
+        if ($activeProjectsCount > 0) {
+            return redirect()->route('products.index')
+                ->with('error', "Cannot delete this product: {$activeProjectsCount} active project(s) still include it. Complete or remove it from those projects first.");
+        }
+
         $product->delete();
 
         return redirect()->route('products.index')

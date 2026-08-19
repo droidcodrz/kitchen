@@ -15,6 +15,13 @@ class InventoryItem extends Model
     use HasFactory, SoftDeletes, HasActivityLog;
 
     /**
+     * Project statuses that count as done. A project in any other status is
+     * still running, so whatever it depends on must not be deleted out from
+     * under it. Shared with Product so the two rules cannot drift apart.
+     */
+    public const CLOSED_PROJECT_STATUSES = ['delivered', 'finished'];
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
@@ -172,6 +179,34 @@ class InventoryItem extends Model
     {
         return $this->belongsToMany(Product::class, 'product_material')
             ->withPivot('quantity_required', 'notes');
+    }
+
+    /**
+     * Projects this item is attached to directly, outside of any product.
+     */
+    public function projects(): BelongsToMany
+    {
+        return $this->belongsToMany(Project::class, 'project_inventory_item')
+            ->withPivot('quantity', 'notes');
+    }
+
+    /**
+     * How many still-running projects depend on this item - either attached
+     * to the project directly, or pulled in through the bill of materials of
+     * a product on that project. Counted over projects rather than over the
+     * two paths separately, so a project using it both ways counts once.
+     *
+     * Deleting an item underneath these projects would leave their reserved
+     * and consumed stock referring to something that no longer exists.
+     */
+    public function activeProjectsCount(): int
+    {
+        return Project::whereNotIn('projects.status', self::CLOSED_PROJECT_STATUSES)
+            ->where(function ($query) {
+                $query->whereHas('inventoryItems', fn ($q) => $q->where('inventory_items.id', $this->getKey()))
+                    ->orWhereHas('products.requiredMaterials', fn ($q) => $q->where('inventory_items.id', $this->getKey()));
+            })
+            ->count();
     }
 
     /**
