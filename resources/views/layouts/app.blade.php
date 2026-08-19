@@ -118,6 +118,28 @@
             // back as a 500, even though the record was created fine - so guard
             // every form once here rather than per form.
             (function () {
+                // wire:navigate swaps the body and re-runs this script, but the
+                // listeners below live on `document`, which survives the swap.
+                // Registering again stacked a second copy: on the next submit
+                // the first copy set the flag and the second saw it already set
+                // and cancelled the submit as a duplicate. Every form in the app
+                // silently stopped working after a single in-app navigation.
+                if (window.__kitchenSubmitGuardInstalled) return;
+                window.__kitchenSubmitGuardInstalled = true;
+
+                // Longest a submit may hold a form before we assume the
+                // navigation is never coming and hand the form back.
+                const STUCK_SUBMIT_TIMEOUT_MS = 15000;
+
+                function releaseForm(form) {
+                    delete form.dataset.submitting;
+                    form.querySelectorAll('button[type=submit], input[type=submit]')
+                        .forEach(function (button) {
+                            button.disabled = false;
+                            button.classList.remove('opacity-75', 'cursor-wait');
+                        });
+                }
+
                 function guardSubmit(event) {
                     const form = event.target;
 
@@ -139,11 +161,32 @@
                     // cursor read as "this action is blocked" and made the
                     // confirm dialogs look broken while they worked.
                     setTimeout(function () {
+                        // This guard listens on the capture phase, so it flags
+                        // the form before any handler further down gets to
+                        // cancel the submit (a duplicate-name check, a client
+                        // side validation). When that happens the page stays
+                        // put, and a form left flagged swallows every later
+                        // click in silence - the button appears dead. Hand it
+                        // straight back instead.
+                        if (event.defaultPrevented) {
+                            releaseForm(form);
+                            return;
+                        }
+
                         form.querySelectorAll('button[type=submit], input[type=submit]')
                             .forEach(function (button) {
                                 button.disabled = true;
                                 button.classList.add('opacity-75', 'cursor-wait');
                             });
+
+                        // Last resort: if the submit never takes the page
+                        // anywhere - request dropped, navigation blocked - the
+                        // form must not stay jammed for the rest of the visit.
+                        setTimeout(function () {
+                            if (form.isConnected && form.dataset.submitting === 'true') {
+                                releaseForm(form);
+                            }
+                        }, STUCK_SUBMIT_TIMEOUT_MS);
                     }, 0);
                 }
 
@@ -153,14 +196,7 @@
                 // still flagged from its last submit - clear it on arrival so
                 // the form stays usable.
                 function releaseForms() {
-                    document.querySelectorAll('form[data-submitting=true]').forEach(function (form) {
-                        delete form.dataset.submitting;
-                        form.querySelectorAll('button[type=submit], input[type=submit]')
-                            .forEach(function (button) {
-                                button.disabled = false;
-                                button.classList.remove('opacity-75', 'cursor-wait');
-                            });
-                    });
+                    document.querySelectorAll('form[data-submitting=true]').forEach(releaseForm);
                 }
 
                 document.addEventListener('livewire:navigated', releaseForms);

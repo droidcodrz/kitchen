@@ -50,7 +50,13 @@
                          It used to just grey out with a "not allowed" cursor,
                          which read as "this action is blocked" rather than
                          "working on it". --}}
-                    <form method="POST" action="{{ $action }}" @submit="busy = true">
+                    {{-- busy is set on the next tick, never inside the submit
+                         handler itself: disabling the submit button while the
+                         event is still being dispatched cancels the submission
+                         outright in some browsers, so the Delete button simply
+                         did nothing. Same reason the global guard in the layout
+                         defers its own disabling. --}}
+                    <form method="POST" action="{{ $action }}" @submit="setTimeout(() => busy = true, 0)">
                         @csrf
                         @method('DELETE')
                         <button type="submit" :disabled="busy"
