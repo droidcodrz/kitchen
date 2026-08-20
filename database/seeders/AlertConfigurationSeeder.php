@@ -38,6 +38,14 @@ class AlertConfigurationSeeder extends Seeder
                 'updated_at'      => $now,
             ],
             [
+                'alert_type'      => 'insufficient_stock',
+                'threshold_value' => 0,
+                'is_enabled'      => true,
+                'notify_roles'    => json_encode(['admin', 'project-manager']),
+                'created_at'      => $now,
+                'updated_at'      => $now,
+            ],
+            [
                 'alert_type'      => 'new_inventory_addition',
                 'threshold_value' => 0,
                 'is_enabled'      => true,

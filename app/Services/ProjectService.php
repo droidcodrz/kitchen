@@ -13,6 +13,13 @@ use Illuminate\Support\Str;
 
 class ProjectService
 {
+    /**
+     * Statuses whose materials have already been deducted from stock rather
+     * than reserved. Editing a project in one of these settles the difference
+     * against stock; confirmed still works on reservations.
+     */
+    private const CONSUMED_STATUSES = ['in_production', 'delayed', 'inspection', 'finished', 'delivered'];
+
     public function __construct(
         protected InventoryService $inventoryService,
         protected AlertNotifier $alertNotifier
@@ -176,118 +183,144 @@ class ProjectService
      */
     public function updateProject(Project $project, array $data): Project
     {
-        if (isset($data['name'])) {
-            $data['slug'] = Str::slug($data['name']);
-        }
+        // One transaction: if settling stock against the new bill of
+        // materials fails for want of stock, the product and inventory
+        // changes roll back with it. A half-saved project claiming
+        // materials that were never deducted is worse than a refused save.
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($project, $data) {
+            if (isset($data['name'])) {
+                $data['slug'] = Str::slug($data['name']);
+            }
 
-        // The edit form can change status directly, and it can change the
-        // products and inventory items in the same save. Only 'confirmed'
-        // holds a reservation: draft holds none, and in_production and later
-        // have already consumed their stock, so those must be left alone.
-        //
-        // Release first, while the relations are still the ones the existing
-        // reservation was calculated from - releasing after the syncs below
-        // would give back quantities for the new set, not the reserved one.
-        $wasConfirmed = $project->status === 'confirmed';
+            // The edit form can change status directly, and it can change the
+            // products and inventory items in the same save. Only 'confirmed'
+            // holds a reservation: draft holds none, and in_production and later
+            // have already consumed their stock, so those must be left alone.
+            //
+            // Release first, while the relations are still the ones the existing
+            // reservation was calculated from - releasing after the syncs below
+            // would give back quantities for the new set, not the reserved one.
+            $wasConfirmed = $project->status === 'confirmed';
 
-        if ($wasConfirmed) {
-            $this->inventoryService->releaseForProject($project);
-        }
+            if ($wasConfirmed) {
+                $this->inventoryService->releaseForProject($project);
+            }
 
-        $project->update($data);
+            // A project past confirmation has already had its materials deducted.
+            // Editing what it contains has to settle the difference afterwards, so
+            // snapshot what it needed before the syncs change it.
+            $hadConsumed = in_array($project->status, self::CONSUMED_STATUSES, true);
+            $consumedBefore = $hadConsumed
+                ? $this->inventoryService->requiredQuantitiesForProject($project)
+                : [];
 
-        // Sync products with pivot data
-        if (array_key_exists('products', $data)) {
-            $productSync = [];
-            foreach ($data['products'] ?? [] as $product) {
-                if (!empty($product['product_id'])) {
-                    $productSync[$product['product_id']] = [
-                        'quantity' => $product['quantity'] ?? 1,
-                        'unit_price_at_time' => $product['unit_price_at_time'] ?? null,
-                        'notes' => $product['notes'] ?? null,
-                    ];
+            $project->update($data);
+
+            // Sync products with pivot data
+            if (array_key_exists('products', $data)) {
+                $productSync = [];
+                foreach ($data['products'] ?? [] as $product) {
+                    if (!empty($product['product_id'])) {
+                        $productSync[$product['product_id']] = [
+                            'quantity' => $product['quantity'] ?? 1,
+                            'unit_price_at_time' => $product['unit_price_at_time'] ?? null,
+                            'notes' => $product['notes'] ?? null,
+                        ];
+                    }
+                }
+                $project->products()->sync($productSync);
+            }
+
+            // Sync inventory items attached directly to the project
+            if (array_key_exists('inventory_items', $data)) {
+                $inventoryItemSync = [];
+                foreach ($data['inventory_items'] ?? [] as $entry) {
+                    if (!empty($entry['inventory_item_id'])) {
+                        $inventoryItemSync[$entry['inventory_item_id']] = [
+                            'quantity' => $entry['quantity'] ?? 1,
+                            'notes' => $entry['notes'] ?? null,
+                        ];
+                    }
+                }
+                $project->inventoryItems()->sync($inventoryItemSync);
+            }
+
+            // Sync teams
+            if (array_key_exists('team_ids', $data)) {
+                $teamSync = [];
+                foreach ($data['team_ids'] ?? [] as $teamId) {
+                    $teamSync[$teamId] = ['assigned_at' => now()];
+                }
+                $project->teams()->sync($teamSync);
+            }
+
+            // Sync members
+            if (array_key_exists('members', $data)) {
+                $memberSync = [];
+                foreach ($data['members'] ?? [] as $memberId) {
+                    $memberSync[$memberId] = ['assigned_at' => now()];
+                }
+                $project->members()->sync($memberSync);
+            }
+
+            // Delete attachments
+            if (!empty($data['delete_attachments'])) {
+                foreach ($data['delete_attachments'] as $attachmentId) {
+                    $attachment = $project->attachments()->find($attachmentId);
+                    if ($attachment) {
+                        // Delete file from storage
+                        Storage::disk($attachment->disk ?? 'private')->delete($attachment->file_path);
+                        // Delete database record
+                        $attachment->delete();
+                    }
                 }
             }
-            $project->products()->sync($productSync);
-        }
 
-        // Sync inventory items attached directly to the project
-        if (array_key_exists('inventory_items', $data)) {
-            $inventoryItemSync = [];
-            foreach ($data['inventory_items'] ?? [] as $entry) {
-                if (!empty($entry['inventory_item_id'])) {
-                    $inventoryItemSync[$entry['inventory_item_id']] = [
-                        'quantity' => $entry['quantity'] ?? 1,
-                        'notes' => $entry['notes'] ?? null,
-                    ];
+            // Handle new attachments
+            if (!empty($data['attachments'])) {
+                foreach ($data['attachments'] as $file) {
+                    $path = $file->store("project-attachments/{$project->id}", 'private');
+
+                    $project->attachments()->create([
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $path,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                        'disk' => 'private',
+                        'uploaded_by' => auth()->id(),
+                    ]);
                 }
             }
-            $project->inventoryItems()->sync($inventoryItemSync);
-        }
 
-        // Sync teams
-        if (array_key_exists('team_ids', $data)) {
-            $teamSync = [];
-            foreach ($data['team_ids'] ?? [] as $teamId) {
-                $teamSync[$teamId] = ['assigned_at' => now()];
+            // Re-reserve against whatever the project holds now. This covers the
+            // status moving draft -> confirmed on the edit form (previously the
+            // status changed but no materials were ever reserved), and a confirmed
+            // project having its products or inventory items edited, which needs
+            // the reservation recalculated rather than left at the old figures.
+            //
+            // Paired with the release above: a project that stays confirmed and is
+            // otherwise unchanged gives back and takes the same quantity, so the
+            // reserved figure does not drift on repeated saves.
+            if ($project->fresh()->status === 'confirmed') {
+                $this->inventoryService->reserveForProject(
+                    $project->fresh(['products.requiredMaterials', 'inventoryItems'])
+                );
             }
-            $project->teams()->sync($teamSync);
-        }
 
-        // Sync members
-        if (array_key_exists('members', $data)) {
-            $memberSync = [];
-            foreach ($data['members'] ?? [] as $memberId) {
-                $memberSync[$memberId] = ['assigned_at' => now()];
+            // Still past confirmation: settle stock against the new bill of
+            // materials. Adding a product deducts what it needs, removing one
+            // hands it back. Throws if stock cannot cover an addition, which
+            // rolls the save back rather than letting the project claim
+            // materials that were never taken.
+            if ($hadConsumed && in_array($project->fresh()->status, self::CONSUMED_STATUSES, true)) {
+                $this->inventoryService->adjustConsumptionForProject(
+                    $project->fresh(['products.requiredMaterials', 'inventoryItems']),
+                    $consumedBefore
+                );
             }
-            $project->members()->sync($memberSync);
-        }
 
-        // Delete attachments
-        if (!empty($data['delete_attachments'])) {
-            foreach ($data['delete_attachments'] as $attachmentId) {
-                $attachment = $project->attachments()->find($attachmentId);
-                if ($attachment) {
-                    // Delete file from storage
-                    Storage::disk($attachment->disk ?? 'private')->delete($attachment->file_path);
-                    // Delete database record
-                    $attachment->delete();
-                }
-            }
-        }
-
-        // Handle new attachments
-        if (!empty($data['attachments'])) {
-            foreach ($data['attachments'] as $file) {
-                $path = $file->store("project-attachments/{$project->id}", 'private');
-
-                $project->attachments()->create([
-                    'file_name' => $file->getClientOriginalName(),
-                    'file_path' => $path,
-                    'file_size' => $file->getSize(),
-                    'mime_type' => $file->getMimeType(),
-                    'disk' => 'private',
-                    'uploaded_by' => auth()->id(),
-                ]);
-            }
-        }
-
-        // Re-reserve against whatever the project holds now. This covers the
-        // status moving draft -> confirmed on the edit form (previously the
-        // status changed but no materials were ever reserved), and a confirmed
-        // project having its products or inventory items edited, which needs
-        // the reservation recalculated rather than left at the old figures.
-        //
-        // Paired with the release above: a project that stays confirmed and is
-        // otherwise unchanged gives back and takes the same quantity, so the
-        // reserved figure does not drift on repeated saves.
-        if ($project->fresh()->status === 'confirmed') {
-            $this->inventoryService->reserveForProject(
-                $project->fresh(['products.requiredMaterials', 'inventoryItems'])
-            );
-        }
-
-        return $project->fresh(['client', 'projectManager', 'products', 'inventoryItems', 'teams', 'members']);
+            return $project->fresh(['client', 'projectManager', 'products', 'inventoryItems', 'teams', 'members']);
+        });
     }
 
     /**

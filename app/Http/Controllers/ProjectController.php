@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\InsufficientStockException;
 use App\Http\Requests\Project\StoreProjectRequest;
 use App\Http\Requests\Project\UpdateProjectRequest;
 use App\Http\Requests\Project\UpdateProjectStatusRequest;
@@ -117,7 +118,20 @@ class ProjectController extends Controller
      */
     public function store(StoreProjectRequest $request): RedirectResponse
     {
-        $project = $this->projectService->createProject($request->validated());
+        try {
+            $project = $this->projectService->createProject($request->validated());
+        } catch (InsufficientStockException $e) {
+            // Nothing was saved - send the user back to the form with what they
+            // typed and the shortfall spelled out, rather than a bare failure.
+            // Alerting happens here, after the failed save has rolled back:
+            // a notification written inside that transaction would be undone
+            // with it and never reach anyone.
+            $this->alertInsufficientStock($e, null);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
 
         // Check if project should be marked as delayed (in case delivery date is in past)
         $this->projectService->checkAndMarkDelayed($project);
@@ -176,13 +190,38 @@ class ProjectController extends Controller
      */
     public function update(UpdateProjectRequest $request, Project $project): RedirectResponse
     {
-        $this->projectService->updateProject($project, $request->validated());
+        try {
+            $this->projectService->updateProject($project, $request->validated());
+        } catch (InsufficientStockException $e) {
+            // The whole update rolled back, so the project is untouched. Keep
+            // the user's edits on the form and say exactly what is short.
+            $this->alertInsufficientStock($e, $project);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
 
         // Check if project should be marked as delayed after update
         $this->projectService->checkAndMarkDelayed($project);
 
         return redirect()->route('projects.show', $project)
             ->with('success', 'Project updated successfully.');
+    }
+
+    /**
+     * Alert the configured recipients that short stock blocked an action.
+     * Only ever called from a catch block, once the failed work has rolled
+     * back, so the in-app notification survives.
+     */
+    private function alertInsufficientStock(InsufficientStockException $e, ?Project $project): void
+    {
+        if (!$project) {
+            return;
+        }
+
+        app(\App\Services\InventoryService::class)
+            ->notifyInsufficientStock($e->shortages, $project, $e->action);
     }
 
     /**
@@ -216,6 +255,13 @@ class ProjectController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Project status updated successfully.');
+        } catch (InsufficientStockException $e) {
+            // Caught ahead of the general arm below so the shortage can be
+            // alerted on - after the rollback, for the reason noted above.
+            $this->alertInsufficientStock($e, $project);
+
+            return redirect()->back()
+                ->with('error', $e->getMessage());
         } catch (\InvalidArgumentException $e) {
             return redirect()->back()
                 ->with('error', $e->getMessage());

@@ -4,11 +4,14 @@ namespace App\Services;
 
 use App\Models\InventoryItem;
 use App\Models\InventoryTransaction;
+use App\Exceptions\InsufficientStockException;
 use App\Models\Project;
+use App\Notifications\InsufficientStockNotification;
 use App\Notifications\LowStockNotification;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class InventoryService
 {
@@ -73,7 +76,7 @@ class InventoryService
      * manufactured products (via their BOM) AND any raw inventory items
      * attached directly to the project. Same item counted both ways just adds up.
      */
-    private function requiredQuantitiesForProject(Project $project): array
+    public function requiredQuantitiesForProject(Project $project): array
     {
         $project->load('products.requiredMaterials', 'inventoryItems');
 
@@ -193,19 +196,10 @@ class InventoryService
 
             $materials = InventoryItem::whereIn('id', array_keys($required))->get()->keyBy('id');
 
-            // Validate stock is sufficient for every material before deducting any of them
-            foreach ($required as $materialId => $qty) {
-                $material = $materials->get($materialId);
-
-                if (!$material || $material->stock_quantity < $qty) {
-                    $available = $material->stock_quantity ?? 0;
-                    $name = $material->name ?? "material #{$materialId}";
-
-                    throw new \InvalidArgumentException(
-                        "Cannot start production: insufficient stock for {$name}. Available: {$available}, needed: {$qty}."
-                    );
-                }
-            }
+            // Check every material before deducting any of them, and report all
+            // the short ones at once - fixing them one failed save at a time is
+            // needless when the whole shortfall is already known here.
+            $this->guardAgainstShortages($required, $materials, $project, 'Starting production');
 
             foreach ($required as $materialId => $qty) {
                 $material = $materials->get($materialId);
@@ -232,6 +226,140 @@ class InventoryService
                 }
             }
         });
+    }
+
+    /**
+     * Move already-consumed stock to match a changed bill of materials.
+     *
+     * Once a project is in production its materials have been deducted, not
+     * reserved, so editing what it contains has to settle the difference:
+     * take the extra for anything added, hand back anything removed. Pass the
+     * quantities the project required *before* the change - the current ones
+     * are read from the project as it now stands.
+     *
+     * @param array<int, float> $previousRequired  material id => quantity
+     * @throws InsufficientStockException if stock cannot cover an increase
+     */
+    public function adjustConsumptionForProject(Project $project, array $previousRequired): void
+    {
+        DB::transaction(function () use ($project, $previousRequired) {
+            $current = $this->requiredQuantitiesForProject($project);
+
+            $deltas = [];
+            foreach (array_unique(array_merge(array_keys($previousRequired), array_keys($current))) as $materialId) {
+                $delta = ($current[$materialId] ?? 0) - ($previousRequired[$materialId] ?? 0);
+
+                if (abs($delta) > 0.0001) {
+                    $deltas[$materialId] = $delta;
+                }
+            }
+
+            if (empty($deltas)) {
+                return;
+            }
+
+            $materials = InventoryItem::whereIn('id', array_keys($deltas))->get()->keyBy('id');
+
+            // Only the increases need covering; decreases give stock back.
+            $increases = array_filter($deltas, fn ($d) => $d > 0);
+            $this->guardAgainstShortages($increases, $materials, $project, 'Adding materials to a project already in production');
+
+            foreach ($deltas as $materialId => $delta) {
+                $material = $materials->get($materialId);
+
+                if (!$material) {
+                    continue;
+                }
+
+                if ($delta > 0) {
+                    $material->decrement('stock_quantity', $delta);
+                } else {
+                    $material->increment('stock_quantity', abs($delta));
+                }
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $materialId,
+                    'type' => $delta > 0 ? 'deduction' : 'addition',
+                    'quantity' => abs($delta),
+                    'reference_type' => Project::class,
+                    'reference_id' => $project->id,
+                    'notes' => $delta > 0
+                        ? "Consumed for project: {$project->name} (materials added after production started)"
+                        : "Returned from project: {$project->name} (materials removed after production started)",
+                    'performed_by' => Auth::id(),
+                ]);
+
+                $material->refresh();
+                if ($material->is_low_stock) {
+                    $this->notifyLowStock($material);
+                }
+            }
+        });
+    }
+
+    /**
+     * Throw if any required quantity exceeds what the item actually has,
+     * alerting the configured recipients first. The action is refused, so the
+     * alert is a prompt to restock rather than a record of a deduction.
+     *
+     * @param array<int, float> $required
+     * @param \Illuminate\Support\Collection<int, InventoryItem> $materials
+     * @throws InsufficientStockException
+     */
+    private function guardAgainstShortages(array $required, $materials, Project $project, string $action): void
+    {
+        $shortages = [];
+
+        foreach ($required as $materialId => $needed) {
+            $material = $materials->get($materialId);
+
+            if (!$material || $material->stock_quantity < $needed) {
+                $shortages[] = [
+                    'name' => $material->name ?? "Material #{$materialId}",
+                    'sku' => $material->sku ?? null,
+                    'available' => (float) ($material->stock_quantity ?? 0),
+                    'needed' => (float) $needed,
+                    'unit' => $material->unit_of_measure ?? null,
+                ];
+            }
+        }
+
+        if (empty($shortages)) {
+            return;
+        }
+
+        // Deliberately does not alert here: this runs inside a transaction
+        // that is about to roll back, and a database notification written
+        // inside it would be rolled back with everything else. The callers
+        // alert once the rollback has happened.
+        throw new InsufficientStockException($shortages, $action);
+    }
+
+    /**
+     * Alert the configured recipients that an action was blocked by short stock.
+     *
+     * Call this only once the failed action's transaction has rolled back -
+     * from the controller handling the exception, not from inside the service.
+     * A database notification written inside the doomed transaction is rolled
+     * back with it, which silently loses the in-app alert while the email,
+     * being non-transactional, still goes out.
+     *
+     * Wrapped so a mail failure cannot mask the shortage itself, which is what
+     * the user actually needs to hear about.
+     */
+    public function notifyInsufficientStock(array $shortages, Project $project, ?string $action = null): void
+    {
+        try {
+            $this->alertNotifier->notify(
+                'insufficient_stock',
+                fn (bool $viaEmail) => new InsufficientStockNotification($shortages, $project, $action, $viaEmail)
+            );
+        } catch (\Throwable $e) {
+            Log::error('Failed to send insufficient stock alert', [
+                'project_id' => $project->id,
+                'exception' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
