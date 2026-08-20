@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductFolder;
 use App\Models\Project;
+use App\Services\InventoryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ use Illuminate\View\View;
 
 class TrashController extends Controller
 {
+    public function __construct(
+        protected InventoryService $inventoryService
+    ) {}
+
     /**
      * Display all soft-deleted items.
      */
@@ -97,6 +102,20 @@ class TrashController extends Controller
 
         $item = $model::onlyTrashed()->findOrFail($id);
         $item->restore();
+
+        // Deleting a confirmed project hands its reserved materials back to
+        // inventory, so bringing the project back has to take them again -
+        // otherwise the project is live once more while nothing is held for
+        // it, and the available quantity reads higher than it really is.
+        //
+        // Only 'confirmed' holds a reservation: draft never had one, and
+        // in_production and later already consumed their stock and were not
+        // released on delete, so they must be left alone here too.
+        if ($item instanceof Project && $item->status === 'confirmed') {
+            $this->inventoryService->reserveForProject(
+                $item->load('products.requiredMaterials', 'inventoryItems')
+            );
+        }
 
         $typeName = $this->getTypeName($type);
 
