@@ -229,6 +229,75 @@ class InventoryService
     }
 
     /**
+     * Move an existing reservation to match a changed bill of materials.
+     *
+     * Editing a confirmed project used to release the entire old requirement
+     * and reserve the entire new one. The running total ended up right, but
+     * adding a single unit was recorded as "released 5, reserved 6", which
+     * reads as though five units were freed and six taken. Only the difference
+     * actually moves, so only the difference is recorded.
+     *
+     * Pass the quantities the project required *before* the change; the
+     * current ones are read from the project as it now stands.
+     *
+     * @param array<int, float> $previousRequired  material id => quantity
+     */
+    public function adjustReservationForProject(Project $project, array $previousRequired, ?array $currentRequired = null): void
+    {
+        DB::transaction(function () use ($project, $previousRequired, $currentRequired) {
+            // Pass an explicit empty array to give the whole reservation back -
+            // used when a project stops being confirmed, where the requirement
+            // still exists on the project but is no longer held.
+            $current = $currentRequired ?? $this->requiredQuantitiesForProject($project);
+
+            $deltas = [];
+            foreach (array_unique(array_merge(array_keys($previousRequired), array_keys($current))) as $materialId) {
+                $delta = ($current[$materialId] ?? 0) - ($previousRequired[$materialId] ?? 0);
+
+                if (abs($delta) > 0.0001) {
+                    $deltas[$materialId] = $delta;
+                }
+            }
+
+            if (empty($deltas)) {
+                return;
+            }
+
+            $materials = InventoryItem::whereIn('id', array_keys($deltas))->get()->keyBy('id');
+
+            foreach ($deltas as $materialId => $delta) {
+                $material = $materials->get($materialId);
+
+                if (!$material) {
+                    continue;
+                }
+
+                if ($delta > 0) {
+                    $material->increment('reserved_quantity', $delta);
+                } else {
+                    // Never below zero: a reservation that was already partly
+                    // released elsewhere must not push the total negative.
+                    $material->update([
+                        'reserved_quantity' => max(0, $material->reserved_quantity - abs($delta)),
+                    ]);
+                }
+
+                InventoryTransaction::create([
+                    'inventory_item_id' => $materialId,
+                    'type' => $delta > 0 ? 'reservation' : 'release',
+                    'quantity' => abs($delta),
+                    'reference_type' => Project::class,
+                    'reference_id' => $project->id,
+                    'notes' => $delta > 0
+                        ? "Additional quantity reserved for project: {$project->name}"
+                        : "Quantity released from project: {$project->name}",
+                    'performed_by' => Auth::id(),
+                ]);
+            }
+        });
+    }
+
+    /**
      * Move already-consumed stock to match a changed bill of materials.
      *
      * Once a project is in production its materials have been deducted, not

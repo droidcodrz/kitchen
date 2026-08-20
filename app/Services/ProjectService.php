@@ -194,23 +194,16 @@ class ProjectService
 
             // The edit form can change status directly, and it can change the
             // products and inventory items in the same save. Only 'confirmed'
-            // holds a reservation: draft holds none, and in_production and later
-            // have already consumed their stock, so those must be left alone.
+            // holds a reservation: draft holds none, and in_production and
+            // later have already consumed their stock outright.
             //
-            // Release first, while the relations are still the ones the existing
-            // reservation was calculated from - releasing after the syncs below
-            // would give back quantities for the new set, not the reserved one.
+            // Snapshot what the project requires now, before the syncs below
+            // change it. Whatever it holds - a reservation or consumed stock -
+            // is settled against this afterwards by moving only the difference.
             $wasConfirmed = $project->status === 'confirmed';
-
-            if ($wasConfirmed) {
-                $this->inventoryService->releaseForProject($project);
-            }
-
-            // A project past confirmation has already had its materials deducted.
-            // Editing what it contains has to settle the difference afterwards, so
-            // snapshot what it needed before the syncs change it.
             $hadConsumed = in_array($project->status, self::CONSUMED_STATUSES, true);
-            $consumedBefore = $hadConsumed
+
+            $requiredBefore = ($wasConfirmed || $hadConsumed)
                 ? $this->inventoryService->requiredQuantitiesForProject($project)
                 : [];
 
@@ -292,19 +285,23 @@ class ProjectService
                 }
             }
 
-            // Re-reserve against whatever the project holds now. This covers the
-            // status moving draft -> confirmed on the edit form (previously the
-            // status changed but no materials were ever reserved), and a confirmed
-            // project having its products or inventory items edited, which needs
-            // the reservation recalculated rather than left at the old figures.
-            //
-            // Paired with the release above: a project that stays confirmed and is
-            // otherwise unchanged gives back and takes the same quantity, so the
-            // reserved figure does not drift on repeated saves.
-            if ($project->fresh()->status === 'confirmed') {
-                $this->inventoryService->reserveForProject(
-                    $project->fresh(['products.requiredMaterials', 'inventoryItems'])
-                );
+            $isConfirmed = $project->fresh()->status === 'confirmed';
+            $withRelations = fn () => $project->fresh(['products.requiredMaterials', 'inventoryItems']);
+
+            if ($wasConfirmed && $isConfirmed) {
+                // Still confirmed, contents may have changed: move only the
+                // difference. Adding one unit reserves one unit, rather than
+                // releasing the whole requirement and taking it again.
+                $this->inventoryService->adjustReservationForProject($withRelations(), $requiredBefore);
+            } elseif (!$wasConfirmed && $isConfirmed) {
+                // Newly confirmed on the edit form - nothing was held before,
+                // so the full requirement is reserved now.
+                $this->inventoryService->reserveForProject($withRelations());
+            } elseif ($wasConfirmed && !$isConfirmed) {
+                // No longer confirmed: hand back everything that was held.
+                // Measured against the requirement as it stood when reserved,
+                // not the edited one, so exactly what was taken goes back.
+                $this->inventoryService->adjustReservationForProject($withRelations(), $requiredBefore, []);
             }
 
             // Still past confirmation: settle stock against the new bill of
@@ -315,7 +312,7 @@ class ProjectService
             if ($hadConsumed && in_array($project->fresh()->status, self::CONSUMED_STATUSES, true)) {
                 $this->inventoryService->adjustConsumptionForProject(
                     $project->fresh(['products.requiredMaterials', 'inventoryItems']),
-                    $consumedBefore
+                    $requiredBefore
                 );
             }
 
