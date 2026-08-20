@@ -180,6 +180,20 @@ class ProjectService
             $data['slug'] = Str::slug($data['name']);
         }
 
+        // The edit form can change status directly, and it can change the
+        // products and inventory items in the same save. Only 'confirmed'
+        // holds a reservation: draft holds none, and in_production and later
+        // have already consumed their stock, so those must be left alone.
+        //
+        // Release first, while the relations are still the ones the existing
+        // reservation was calculated from - releasing after the syncs below
+        // would give back quantities for the new set, not the reserved one.
+        $wasConfirmed = $project->status === 'confirmed';
+
+        if ($wasConfirmed) {
+            $this->inventoryService->releaseForProject($project);
+        }
+
         $project->update($data);
 
         // Sync products with pivot data
@@ -256,6 +270,21 @@ class ProjectService
                     'uploaded_by' => auth()->id(),
                 ]);
             }
+        }
+
+        // Re-reserve against whatever the project holds now. This covers the
+        // status moving draft -> confirmed on the edit form (previously the
+        // status changed but no materials were ever reserved), and a confirmed
+        // project having its products or inventory items edited, which needs
+        // the reservation recalculated rather than left at the old figures.
+        //
+        // Paired with the release above: a project that stays confirmed and is
+        // otherwise unchanged gives back and takes the same quantity, so the
+        // reserved figure does not drift on repeated saves.
+        if ($project->fresh()->status === 'confirmed') {
+            $this->inventoryService->reserveForProject(
+                $project->fresh(['products.requiredMaterials', 'inventoryItems'])
+            );
         }
 
         return $project->fresh(['client', 'projectManager', 'products', 'inventoryItems', 'teams', 'members']);
