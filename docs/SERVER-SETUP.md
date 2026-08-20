@@ -150,13 +150,31 @@ them from the hosting control panel instead.
 
 ---
 
+## First-time setup on a new machine
+
+Two directories are deliberately not in git — `vendor/` and `public/build/` —
+so a fresh clone has neither, and the application cannot run until both are
+generated:
+
+```bash
+composer install          # without this: "Failed to open stream: vendor/autoload.php"
+npm ci && npm run build   # without this: every page returns 500 (no Vite manifest)
+cp .env.example .env      # then fill in database and mail settings
+php artisan key:generate
+php artisan migrate
+```
+
+Both failures look alarming and neither is a code fault — they are simply
+build steps that have not been run yet.
+
 ## Deploying new code
 
 ```bash
 ./deploy.sh
 ```
 
-Pulls, migrates, clears the caches and restarts the workers.
+Pulls, installs PHP dependencies, rebuilds frontend assets, migrates, clears
+the caches and restarts the workers.
 
 `queue:restart` is the step worth understanding: a running worker keeps the
 old code in memory and never picks up a deploy on its own. Skip it and your

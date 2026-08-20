@@ -18,8 +18,17 @@ cd "$(dirname "$0")"
 echo "==> Pulling latest code"
 git pull
 
-echo "==> Installing dependencies"
+echo "==> Installing PHP dependencies"
+# vendor/ is not in git, so a fresh checkout has none. Without it artisan
+# cannot even start: "Failed to open stream: vendor/autoload.php".
 composer install --no-dev --optimize-autoloader --no-interaction
+
+echo "==> Building frontend assets"
+# public/build is not in git either. Without it every page returns 500,
+# because the layout asks Vite for a manifest that isn't there. This is the
+# CSS/JS equivalent of composer install and is just as mandatory.
+npm ci
+npm run build
 
 echo "==> Running database migrations"
 php artisan migrate --force
