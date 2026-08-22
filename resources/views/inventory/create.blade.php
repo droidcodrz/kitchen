@@ -61,7 +61,7 @@
 
                 <div>
                     <x-input-label for="material_type" :value="__('Material Type')" />
-                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select material type</option>
                         @foreach($dropdownOptions['material_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('material_type') === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>

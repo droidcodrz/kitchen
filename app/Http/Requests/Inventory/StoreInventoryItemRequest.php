@@ -39,7 +39,12 @@ class StoreInventoryItemRequest extends FormRequest
             'item_type' => ['required', 'max:100'],
             'item_type_label' => ['nullable', 'max:100'],
             'inventory_type' => ['nullable', 'max:100'],
-            'material_type' => ['required', 'max:100'],
+            // Optional on inventory items: plenty of them - a control panel,
+            // a sensor, a valve - have no meaningful material type, and no
+            // existing record carries one. Requiring it made every item
+            // impossible to save from the edit form. The label generator
+            // already handles its absence.
+            'material_type' => ['nullable', 'max:100'],
             'material_grade' => ['nullable', 'max:50'],
             'thickness_gauge' => ['nullable', 'max:50'],
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],

@@ -47,6 +47,7 @@
                     <x-input-label for="item_type" :value="__('Item Type')" />
                     <select id="item_type" name="item_type" x-model="itemType" @change="updatePreview(); loadCustomFields();" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select item type</option>
+                        <x-current-option :value="old('item_type', $product->item_type)" :options="$dropdownOptions['item_types']" />
                         @foreach($dropdownOptions['item_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('item_type', $product->item_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach
@@ -56,8 +57,9 @@
 
                 <div>
                     <x-input-label for="material_type" :value="__('Material Type')" />
-                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" required class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                    <select id="material_type" name="material_type" x-model="materialType" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select material type</option>
+                        <x-current-option :value="old('material_type', $product->material_type)" :options="$dropdownOptions['material_types']" />
                         @foreach($dropdownOptions['material_types'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('material_type', $product->material_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach
@@ -69,6 +71,7 @@
                     <x-input-label for="material_grade" :value="__('Material Grade')" />
                     <select id="material_grade" name="material_grade" x-model="materialGrade" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">No grade</option>
+                        <x-current-option :value="old('material_grade', $product->material_grade)" :options="$dropdownOptions['material_grades']" />
                         @foreach($dropdownOptions['material_grades'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('material_grade', $product->material_grade) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach
@@ -81,6 +84,7 @@
                     <x-input-label for="thickness_gauge" :value="__('Thickness (Gauge)')" />
                     <select id="thickness_gauge" name="thickness_gauge" x-model="thicknessGauge" @change="updatePreview()" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">No gauge</option>
+                        <x-current-option :value="old('thickness_gauge', $product->thickness_gauge)" :options="$dropdownOptions['thickness_gauges']" />
                         @foreach($dropdownOptions['thickness_gauges'] as $opt)
                             <option value="{{ $opt->value }}" {{ old('thickness_gauge', $product->thickness_gauge) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach
@@ -125,6 +129,7 @@
                     <x-input-label for="inventory_type" :value="__('Inventory Type')" />
                     <select id="inventory_type" name="inventory_type" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">Select type</option>
+                        <x-current-option :value="old('inventory_type', $product->inventory_type)" :options="$dropdownOptions['inventory_types'] ?? []" />
                         @foreach($dropdownOptions['inventory_types'] ?? [] as $opt)
                             <option value="{{ $opt->value }}" {{ old('inventory_type', $product->inventory_type) === $opt->value ? 'selected' : '' }}>{{ $opt->label }}</option>
                         @endforeach

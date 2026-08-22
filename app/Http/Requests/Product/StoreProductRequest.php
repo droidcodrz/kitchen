@@ -45,7 +45,11 @@ class StoreProductRequest extends FormRequest
             'type' => ['nullable', 'max:100'],
             'inventory_type' => ['nullable', 'max:100'],
             'item_type' => ['nullable', 'max:100'],
-            'material_type' => ['required', 'max:100'],
+            // Optional, matching item_type above and how the records actually
+            // are: no existing product carries a material type, so requiring
+            // it made every one of them impossible to save from the edit
+            // form. Label generation already handles its absence.
+            'material_type' => ['nullable', 'max:100'],
             'material_grade' => ['nullable', 'max:50'],
             'thickness_gauge' => ['nullable', 'max:50'],
             'thickness_mm' => ['nullable', 'numeric', 'min:0'],
