@@ -7,16 +7,16 @@ use App\Http\Controllers\Auth\EmailVerificationPromptController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
+// Public self-registration is deliberately absent. This is an internal
+// manufacturing system: accounts are created by an administrator under
+// Settings > Users, where a role can be assigned at the same time. Leaving
+// /register reachable would have let anyone on the internet create their own
+// login. Anything that links to it is guarded with Route::has('register'),
+// so removing the route is enough to take the entry points with it.
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
     Route::get('login', [AuthenticatedSessionController::class, 'create'])
         ->name('login');
 
