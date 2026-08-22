@@ -41,16 +41,24 @@
                 <div x-show="entityType === 'inventory_item'" x-cloak>
                     <x-input-label :value="__('System Categories (optional)')" />
                     <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-gray-300 dark:border-gray-700 rounded-md max-h-48 overflow-y-auto">
-                        @foreach($systemCategories ?? [] as $opt)
+                        @forelse($systemCategories ?? [] as $opt)
                             <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                                 <input type="checkbox" name="applies_to_item_types[]" value="{{ $opt->value }}"
                                     @checked(in_array($opt->value, (array) old('applies_to_item_types', [])))
                                     class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
                                 <span>{{ $opt->label }}</span>
                             </label>
-                        @endforeach
+                        @empty
+                            <p class="text-sm text-gray-500 dark:text-gray-400 sm:col-span-2">No system categories are set up yet.</p>
+                        @endforelse
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave all unticked to show this field for every inventory item, or pick the system categories it belongs to.</p>
+                    {{-- This list is only ever as long as the System Category
+                         entries in Dropdown Options. A short list reads as a bug
+                         in this form, so say where it comes from. --}}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Leave all unticked to show this field for every inventory item, or pick the system categories it belongs to.
+                        This list comes from <a href="{{ route('admin.dropdown-options.index', ['type' => 'system_category']) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Settings &rarr; Dropdown Options &rarr; System Category</a>.
+                    </p>
                     <x-input-error :messages="$errors->get('applies_to_item_types')" class="mt-2" />
                 </div>
 

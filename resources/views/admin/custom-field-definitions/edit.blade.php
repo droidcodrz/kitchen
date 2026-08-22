@@ -61,8 +61,17 @@
                                 <span>{{ $orphan }} (not in list)</span>
                             </label>
                         @endforeach
+                        @if(count($systemCategories ?? []) === 0 && empty($definition->applies_to_item_types))
+                            <p class="text-sm text-gray-500 dark:text-gray-400 sm:col-span-2">No system categories are set up yet.</p>
+                        @endif
                     </div>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave all unticked to show this field for every inventory item, or pick the system categories it belongs to.</p>
+                    {{-- This list is only ever as long as the System Category
+                         entries in Dropdown Options. A short list reads as a bug
+                         in this form, so say where it comes from. --}}
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Leave all unticked to show this field for every inventory item, or pick the system categories it belongs to.
+                        This list comes from <a href="{{ route('admin.dropdown-options.index', ['type' => 'system_category']) }}" class="text-indigo-600 dark:text-indigo-400 hover:underline">Settings &rarr; Dropdown Options &rarr; System Category</a>.
+                    </p>
                     <x-input-error :messages="$errors->get('applies_to_item_types')" class="mt-2" />
                 </div>
 
