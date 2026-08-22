@@ -64,7 +64,19 @@
                             <td class="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">{{ $definition->field_label }}</td>
                             <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 font-mono">{{ $definition->field_name }}</td>
                             <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ ucfirst($definition->field_type) }}</td>
-                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">{{ $definition->category->name ?? 'All categories' }}</td>
+                            {{-- Inventory fields are scoped by system category, not
+                                 by Category, so reading the relationship here showed
+                                 every one of them as "All categories" even when it
+                                 was limited to one. --}}
+                            <td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                                @if($definition->entity_type === 'inventory_item')
+                                    {{ empty($definition->applies_to_item_types)
+                                        ? 'All categories'
+                                        : implode(', ', array_map(fn ($key) => $systemCategoryLabels[$key] ?? $key, $definition->applies_to_item_types)) }}
+                                @else
+                                    {{ $definition->category->name ?? 'All categories' }}
+                                @endif
+                            </td>
                             <td class="px-4 py-3 text-center">
                                 @if($definition->is_required)
                                     <span class="text-red-500">*</span>

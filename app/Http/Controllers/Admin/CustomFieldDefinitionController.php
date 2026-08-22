@@ -30,6 +30,11 @@ class CustomFieldDefinitionController extends Controller
         return view('admin.custom-field-definitions.index', [
             'definitions' => $definitions,
             'entityType' => $entityType,
+            // Inventory fields store the system category key, so the list needs
+            // this to print "Metals" rather than the raw "metals".
+            'systemCategoryLabels' => \App\Models\DropdownOption::getOptions(\App\Models\DropdownOption::TYPE_SYSTEM_CATEGORY)
+                ->pluck('label', 'value')
+                ->all(),
         ]);
     }
 
@@ -39,8 +44,10 @@ class CustomFieldDefinitionController extends Controller
     public function create(): View
     {
         $categories = Category::where('is_active', true)->orderBy('name')->get();
+        // Inventory items are scoped by system category, not by Category.
+        $systemCategories = \App\Models\DropdownOption::getOptions(\App\Models\DropdownOption::TYPE_SYSTEM_CATEGORY);
 
-        return view('admin.custom-field-definitions.create', compact('categories'));
+        return view('admin.custom-field-definitions.create', compact('categories', 'systemCategories'));
     }
 
     /**
@@ -53,7 +60,7 @@ class CustomFieldDefinitionController extends Controller
         $data['is_active'] = $request->boolean('is_active', true);
         $data['sort_order'] = $data['sort_order'] ?? 0;
 
-        CustomFieldDefinition::create($data);
+        CustomFieldDefinition::create($this->scopeForEntityType($data));
 
         return redirect()
             ->route('admin.custom-field-definitions.index', ['entity_type' => $data['entity_type']])
@@ -67,9 +74,12 @@ class CustomFieldDefinitionController extends Controller
     {
         $categories = Category::where('is_active', true)->orderBy('name')->get();
 
+        $systemCategories = \App\Models\DropdownOption::getOptions(\App\Models\DropdownOption::TYPE_SYSTEM_CATEGORY);
+
         return view('admin.custom-field-definitions.edit', [
             'definition' => $customFieldDefinition,
             'categories' => $categories,
+            'systemCategories' => $systemCategories,
         ]);
     }
 
@@ -83,11 +93,37 @@ class CustomFieldDefinitionController extends Controller
         $data['is_active'] = $request->boolean('is_active');
         $data['sort_order'] = $data['sort_order'] ?? 0;
 
-        $customFieldDefinition->update($data);
+        $customFieldDefinition->update($this->scopeForEntityType($data));
 
         return redirect()
             ->route('admin.custom-field-definitions.index', ['entity_type' => $customFieldDefinition->entity_type])
             ->with('success', 'Custom field updated successfully.');
+    }
+
+    /**
+     * Keep the scoping columns consistent with the entity type that was chosen.
+     *
+     * Products are scoped by category, inventory items by system category. Both
+     * selectors live on the same form and only one of them is shown at a time,
+     * so the hidden one still posts whatever was last picked - which would save
+     * a category onto an inventory field, where nothing ever reads it.
+     *
+     * Unticking every system category posts no key at all, so without the
+     * default here validated() would simply omit it and the previous scoping
+     * would stay in place, making the field impossible to widen again.
+     */
+    private function scopeForEntityType(array $data): array
+    {
+        if (($data['entity_type'] ?? null) === 'inventory_item') {
+            $data['category_id'] = null;
+            $data['applies_to_item_types'] = array_values(array_filter($data['applies_to_item_types'] ?? [])) ?: null;
+
+            return $data;
+        }
+
+        $data['applies_to_item_types'] = null;
+
+        return $data;
     }
 
     /**

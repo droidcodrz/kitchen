@@ -42,7 +42,13 @@ class UpdateCustomFieldDefinitionRequest extends FormRequest
 
         return [
             'entity_type' => ['required', 'in:product,inventory_item'],
+            // Products are scoped by category; inventory items have no category
+            // column at all and are scoped by system category instead. Without
+            // this rule the value was dropped by validated() and the setting
+            // silently did nothing.
             'category_id' => ['nullable', 'exists:categories,id'],
+            'applies_to_item_types' => ['nullable', 'array'],
+            'applies_to_item_types.*' => ['string', 'max:100'],
             'field_name' => [
                 'required', 'max:100', 'regex:/^[a-z0-9_]+$/',
                 Rule::unique('custom_field_definitions', 'field_name')

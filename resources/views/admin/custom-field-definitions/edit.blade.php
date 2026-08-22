@@ -10,22 +10,22 @@
         </div>
     </x-slot>
 
-    <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6 max-w-2xl" x-data="{ fieldType: '{{ old('field_type', $definition->field_type) }}' }">
+    <div class="bg-white dark:bg-gray-900 shadow-sm rounded-lg p-6 max-w-2xl" x-data="{ fieldType: '{{ old('field_type', $definition->field_type) }}', entityType: '{{ old('entity_type', $definition->entity_type) }}' }">
         <form method="POST" action="{{ route('admin.custom-field-definitions.update', $definition) }}">
             @csrf
             @method('PUT')
             <div class="space-y-4">
                 <div>
                     <x-input-label for="entity_type" :value="__('Applies To')" />
-                    <select id="entity_type" name="entity_type" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                    <select id="entity_type" name="entity_type" x-model="entityType" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                         <option value="product" {{ old('entity_type', $definition->entity_type) === 'product' ? 'selected' : '' }}>Products</option>
                         <option value="inventory_item" {{ old('entity_type', $definition->entity_type) === 'inventory_item' ? 'selected' : '' }}>Inventory Items</option>
                     </select>
                     <x-input-error :messages="$errors->get('entity_type')" class="mt-2" />
                 </div>
 
-                <div>
-                    <x-input-label for="category_id" :value="__('Category (optional)')" />
+                <div x-show="entityType !== 'inventory_item'" x-cloak>
+                    <x-input-label for="category_id" :value="__('Category (optional) - Products only')" />
                     <select id="category_id" name="category_id" class="mt-1 block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                         <option value="">All categories</option>
                         @foreach($categories ?? [] as $category)
@@ -34,6 +34,36 @@
                     </select>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">For Products, leave blank to show this field for every category, or pick one to limit it.</p>
                     <x-input-error :messages="$errors->get('category_id')" class="mt-2" />
+                </div>
+                {{-- Inventory items have no category column: their custom fields
+                     are matched on system category instead. Showing the Category
+                     selector alone meant an inventory field could not be scoped
+                     at all, and whatever was chosen there had no effect. --}}
+                <div x-show="entityType === 'inventory_item'" x-cloak>
+                    <x-input-label :value="__('System Categories (optional)')" />
+                    <div class="mt-1 grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 border border-gray-300 dark:border-gray-700 rounded-md max-h-48 overflow-y-auto">
+                        @foreach($systemCategories ?? [] as $opt)
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" name="applies_to_item_types[]" value="{{ $opt->value }}"
+                                    @checked(in_array($opt->value, (array) old('applies_to_item_types', $definition->applies_to_item_types ?? [])))
+                                    class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                <span>{{ $opt->label }}</span>
+                            </label>
+                        @endforeach
+                        {{-- A system category that was renamed or removed after
+                             this field was saved has no checkbox of its own. Left
+                             out, it would silently drop off on the next save and
+                             widen the field to every inventory item. --}}
+                        @foreach(array_diff((array) old('applies_to_item_types', $definition->applies_to_item_types ?? []), collect($systemCategories ?? [])->pluck('value')->all()) as $orphan)
+                            <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                <input type="checkbox" name="applies_to_item_types[]" value="{{ $orphan }}" checked
+                                    class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                <span>{{ $orphan }} (not in list)</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave all unticked to show this field for every inventory item, or pick the system categories it belongs to.</p>
+                    <x-input-error :messages="$errors->get('applies_to_item_types')" class="mt-2" />
                 </div>
 
                 <div>
