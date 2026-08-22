@@ -220,15 +220,16 @@
                 {{-- Equipment --}}
                 <div>
                     <h3 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">Equipment</h3>
-                    <div x-data="{ products: [{product: '', quantity: 1}] }">
+                    <div x-data="{ products: [{product_id: '', quantity: 1}] }">
                         <template x-for="(product, index) in products" :key="index">
                             <div class="flex items-end gap-3 mb-3">
                                 <div class="flex-1">
                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Product</label>
-                                    <select :name="'products['+index+'][product_id]'" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    <select :name="'products['+index+'][product_id]'" x-model="product.product_id" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                         <option value="">Select a product</option>
                                         @foreach($productsList ?? [] as $product)
-                                            <option value="{{ $product->id }}">{{ $product->name }}</option>
+                                            <option value="{{ $product->id }}"
+                                                :disabled="products.some((row, i) => i !== index && row.product_id == '{{ $product->id }}')">{{ $product->name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -246,7 +247,7 @@
                                 </button>
                             </div>
                         </template>
-                        <button type="button" @click="products.push({product: '', quantity: 1})" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                        <button type="button" @click="products.push({product_id: '', quantity: 1})" class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
                             + Add More
                         </button>
                     </div>
@@ -262,10 +263,11 @@
                         <template x-for="(item, index) in inventoryItems" :key="index">
                             <div class="flex items-center gap-3 mb-3">
                                 <div class="flex-1">
-                                    <select :name="'inventory_items['+index+'][inventory_item_id]'" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    <select :name="'inventory_items['+index+'][inventory_item_id]'" x-model="item.inventory_item_id" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                                         <option value="">Select Inventory Item</option>
                                         @foreach($inventoryItems ?? [] as $inventoryItem)
-                                            <option value="{{ $inventoryItem->id }}">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
+                                            <option value="{{ $inventoryItem->id }}"
+                                                :disabled="inventoryItems.some((row, i) => i !== index && row.inventory_item_id == '{{ $inventoryItem->id }}')">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
                                         @endforeach
                                     </select>
                                 </div>

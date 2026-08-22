@@ -96,7 +96,8 @@
                                 <select :name="'products[' + index + '][product_id]'" x-model="item.product_id" class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                     <option value="">Select Product</option>
                                     @foreach($products ?? [] as $product)
-                                        <option value="{{ $product->id }}">{{ $product->name }} ({{ $product->sku }})</option>
+                                        <option value="{{ $product->id }}"
+                                            :disabled="products.some((row, i) => i !== index && row.product_id == '{{ $product->id }}')">{{ $product->name }} ({{ $product->sku }})</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -138,7 +139,8 @@
                                 <select :name="'inventory_items[' + index + '][inventory_item_id]'" x-model="item.inventory_item_id" class="block w-full border-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
                                     <option value="">Select Inventory Item</option>
                                     @foreach($inventoryItems ?? [] as $inventoryItem)
-                                        <option value="{{ $inventoryItem->id }}">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
+                                        <option value="{{ $inventoryItem->id }}"
+                                            :disabled="inventoryItems.some((row, i) => i !== index && row.inventory_item_id == '{{ $inventoryItem->id }}')">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
                                     @endforeach
                                 </select>
                             </div>
