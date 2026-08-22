@@ -180,7 +180,7 @@
             </div>
 
             {{-- Custom Fields Section --}}
-            <div x-show="customFields.length > 0" x-transition class="p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
+            <div x-show="customFields.length > 0" x-transition x-cloak class="p-4 bg-blue-50 dark:bg-blue-900/20 border-2 border-blue-200 dark:border-blue-800 rounded-lg">
                 <h3 class="text-sm font-semibold text-blue-900 dark:text-blue-100 mb-3">Additional Fields for this Category</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <template x-for="field in customFields" :key="field.id">
