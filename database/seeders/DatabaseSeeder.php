@@ -17,6 +17,10 @@ class DatabaseSeeder extends Seeder
             PermissionsSeeder::class,
             PermissionRoleSeeder::class,
             AlertConfigurationSeeder::class,
+            // Fills the dropdowns on the product and inventory forms - item
+            // type, material type, grade, gauge, inventory type. Not sample
+            // data: without it those selects render with no options at all.
+            DropdownOptionSeeder::class,
             AdminUserSeeder::class,
 
             // Sample data

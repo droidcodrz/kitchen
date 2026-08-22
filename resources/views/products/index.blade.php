@@ -187,9 +187,13 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Inventory Type</label>
                         <select name="inventory_type" class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
                             <option value="">Select type</option>
-                            <option value="Raw Materials">Raw Materials</option>
-                            <option value="Finished Goods">Finished Goods</option>
-                            <option value="Merchandise Goods">Merchandise Goods</option>
+                            {{-- Same source as the create and edit forms. These
+                                 were hardcoded here and listed only three of the
+                                 five types, so a product saved from this modal
+                                 could not always be shown correctly elsewhere. --}}
+                            @foreach($dropdownOptions['inventory_types'] ?? [] as $opt)
+                                <option value="{{ $opt->value }}">{{ $opt->label }}</option>
+                            @endforeach
                         </select>
                     </div>
 
