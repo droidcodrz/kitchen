@@ -229,7 +229,7 @@
                                         <option value="">Select a product</option>
                                         @foreach($productsList ?? [] as $product)
                                             <option value="{{ $product->id }}"
-                                                :disabled="products.some((row, i) => i !== index && row.product_id == '{{ $product->id }}')">{{ $product->name }}</option>
+                                                :disabled="products.some((row, i) => i !== index && row.product_id == '{{ $product->id }}')">{{ $product->name }} ({{ trim('Product' . ($product->sku ? ' - ' . $product->sku : '')) }})</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -267,7 +267,7 @@
                                         <option value="">Select Inventory Item</option>
                                         @foreach($inventoryItems ?? [] as $inventoryItem)
                                             <option value="{{ $inventoryItem->id }}"
-                                                :disabled="inventoryItems.some((row, i) => i !== index && row.inventory_item_id == '{{ $inventoryItem->id }}')">{{ $inventoryItem->name }} ({{ $inventoryItem->sku }})</option>
+                                                :disabled="inventoryItems.some((row, i) => i !== index && row.inventory_item_id == '{{ $inventoryItem->id }}')">{{ $inventoryItem->name }} ({{ trim('Inventory item' . ($inventoryItem->sku ? ' - ' . $inventoryItem->sku : '')) }})</option>
                                         @endforeach
                                     </select>
                                 </div>
