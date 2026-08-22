@@ -140,6 +140,39 @@ class UpdateProjectRequest extends FormRequest
             if (!$hasProduct && !$hasInventoryItem) {
                 $validator->errors()->add('products', 'Select at least one product or inventory item for this project.');
             }
+
+            // The same entry listed twice does not add up - the rows are synced
+            // keyed by id, so the last one silently overwrites the earlier one
+            // and its quantity is lost without any warning. Refuse it and say
+            // which entry is repeated, rather than saving something the user
+            // did not ask for.
+            $rejectDuplicates = function (string $field, string $key, string $modelClass, string $label) use ($validator) {
+                $ids = collect($this->input($field, []))
+                    ->pluck($key)
+                    ->filter()
+                    ->values();
+
+                $repeated = $ids->duplicates()->unique();
+
+                if ($repeated->isEmpty()) {
+                    return;
+                }
+
+                $names = $modelClass::whereIn('id', $repeated)->pluck('name')->all();
+
+                $validator->errors()->add(
+                    $field,
+                    empty($names)
+                        ? "The same {$label} is listed more than once. Combine them into a single row with the total quantity."
+                        : sprintf(
+                            '%s is listed more than once. Combine the rows into a single entry with the total quantity.',
+                            implode(', ', $names)
+                        )
+                );
+            };
+
+            $rejectDuplicates('products', 'product_id', \App\Models\Product::class, 'product');
+            $rejectDuplicates('inventory_items', 'inventory_item_id', \App\Models\InventoryItem::class, 'inventory item');
         });
     }
 }
