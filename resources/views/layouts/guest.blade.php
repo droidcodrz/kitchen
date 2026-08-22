@@ -18,9 +18,10 @@
             })();
         </script>
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        {{-- Figtree was pulled from an external CDN here, but the theme sets
+             Inter and nothing ever referenced Figtree. The request was blocked
+             by our own Content-Security-Policy anyway, so every visit to the
+             login page logged a CSP error for a font it did not use. --}}
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])

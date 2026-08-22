@@ -16,7 +16,11 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            // The users table holds first_name / last_name. Validating a single
+            // "name" here meant fill() silently dropped it - it is neither a
+            // column nor fillable - so the profile name could never be saved.
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
                 'string',
