@@ -24,7 +24,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
+            // The users table was split into first_name / last_name, but this
+            // factory still built a single "name" column. Every test that made
+            // a user died on the insert, which took the whole suite down.
+            'first_name' => fake()->firstName(),
+            'last_name' => fake()->lastName(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
