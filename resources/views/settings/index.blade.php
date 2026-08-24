@@ -16,7 +16,10 @@
         {{-- Theme Settings --}}
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Appearance</h3>
-            <div x-data="{ theme: localStorage.getItem('darkMode') === 'true' ? 'dark' : 'light' }">
+            {{-- Seeded from the account rather than localStorage alone, so the
+                 highlighted button matches the saved preference even in a browser
+                 that has never been used for this login. --}}
+            <div x-data="{ theme: '{{ auth()->user()?->theme_preference === 'dark' ? 'dark' : 'light' }}' }">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-900 dark:text-white">Theme</p>
@@ -24,7 +27,7 @@
                     </div>
                     <div class="flex items-center space-x-3">
                         {{-- Light Mode --}}
-                        <button @click="theme = 'light'; darkMode = false; localStorage.setItem('darkMode', 'false')"
+                        <button @click="theme = 'light'; darkMode = false; localStorage.setItem('darkMode', 'false'); saveThemePreference(false)"
                                 class="flex items-center px-4 py-2 rounded-lg border-2 transition-all duration-150"
                                 :class="theme === 'light' ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                             <svg class="w-5 h-5 mr-2 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
@@ -32,7 +35,7 @@
                         </button>
 
                         {{-- Dark Mode --}}
-                        <button @click="theme = 'dark'; darkMode = true; localStorage.setItem('darkMode', 'true')"
+                        <button @click="theme = 'dark'; darkMode = true; localStorage.setItem('darkMode', 'true'); saveThemePreference(true)"
                                 class="flex items-center px-4 py-2 rounded-lg border-2 transition-all duration-150"
                                 :class="theme === 'dark' ? 'border-gray-900 dark:border-white bg-gray-50 dark:bg-gray-800' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'">
                             <svg class="w-5 h-5 mr-2 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>

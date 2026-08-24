@@ -13,6 +13,15 @@
         <script>
             // This script runs immediately to prevent white flash and layout shift on page load
             (function() {
+                // The account's saved preference is the source of truth: it is what
+                // makes the theme follow the user to another browser or machine,
+                // where localStorage knows nothing. localStorage is kept in step so
+                // the class can still be applied before the first paint.
+                const saved = @json(auth()->user()?->theme_preference);
+                if (saved === 'dark' || saved === 'light') {
+                    localStorage.setItem('darkMode', saved === 'dark' ? 'true' : 'false');
+                }
+
                 const darkMode = localStorage.getItem('darkMode') === 'true';
                 if (darkMode) {
                     document.documentElement.classList.add('dark');
@@ -41,6 +50,26 @@
                     }, 100);
                 });
             })();
+
+            // Records the choice against the account so it survives a different
+            // browser or machine. The switch itself has already happened locally,
+            // so this is deliberately fire-and-forget: a failure here must not
+            // undo or block a theme the user can already see.
+            window.saveThemePreference = function (isDark) {
+                try {
+                    const token = document.querySelector('meta[name="csrf-token"]');
+                    if (!token) return;
+                    fetch(@json(route('settings.update-theme')), {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': token.content,
+                            'Accept': 'application/json',
+                        },
+                        body: JSON.stringify({ theme_preference: isDark ? 'dark' : 'light' }),
+                    }).catch(function () {});
+                } catch (e) {}
+            };
         </script>
 
         <!-- Fonts -->
