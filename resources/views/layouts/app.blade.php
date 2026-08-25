@@ -13,18 +13,51 @@
         <script>
             // This script runs immediately to prevent white flash and layout shift on page load
             (function() {
-                // The account's saved preference is the source of truth: it is what
-                // makes the theme follow the user to another browser or machine,
-                // where localStorage knows nothing. localStorage is kept in step so
-                // the class can still be applied before the first paint.
-                const saved = @json(auth()->user()?->theme_preference);
-                if (saved === 'dark' || saved === 'light') {
-                    localStorage.setItem('darkMode', saved === 'dark' ? 'true' : 'false');
+                // The account's saved preference seeds this browser the first time
+                // it is used for this login, which is what carries the theme to
+                // another machine or a fresh profile where localStorage knows
+                // nothing.
+                //
+                // It seeds rather than overrides on purpose. The value baked into
+                // this page was read when the page was rendered, so overwriting on
+                // every load would let a stale copy - a page rendered before the
+                // last toggle reached the server - undo a choice the user has
+                // already made and can see. Once this browser holds a value, that
+                // value is the live one.
+                let stored = null;
+                try { stored = localStorage.getItem('darkMode'); } catch (e) {}
+
+                if (stored !== 'true' && stored !== 'false') {
+                    const saved = @json(auth()->user()?->theme_preference);
+                    if (saved === 'dark' || saved === 'light') {
+                        try { localStorage.setItem('darkMode', saved === 'dark' ? 'true' : 'false'); } catch (e) {}
+                    }
                 }
 
-                const darkMode = localStorage.getItem('darkMode') === 'true';
-                if (darkMode) {
-                    document.documentElement.classList.add('dark');
+                // Puts the html element into the stored theme. The dark class is
+                // only ever added at runtime, so it is not in the markup the
+                // server sends; an in-app navigation swaps that markup in and the
+                // class goes with it, dropping a dark page back to light while
+                // the stored preference still said dark.
+                //
+                // Alpine does not put it back either: its watcher on darkMode only
+                // fires when the value changes, and after a navigation the value
+                // is read out of storage unchanged.
+                window.applyStoredTheme = function () {
+                    const dark = localStorage.getItem('darkMode') === 'true';
+                    document.documentElement.classList.toggle('dark', dark);
+                };
+
+                window.applyStoredTheme();
+
+                // Registered once. Listeners live on document, which survives the
+                // body swap, so re-running this script on every navigation would
+                // stack another copy of the same handler.
+                if (!window.__kitchenThemeSyncInstalled) {
+                    window.__kitchenThemeSyncInstalled = true;
+                    document.addEventListener('livewire:navigated', function () {
+                        window.applyStoredTheme();
+                    });
                 }
 
                 // Inject CSS to set initial sidebar state and prevent layout shift
