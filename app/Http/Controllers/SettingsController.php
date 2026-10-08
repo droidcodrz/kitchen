@@ -69,7 +69,7 @@ class SettingsController extends Controller
 
         if ($request->boolean('remove_logo')) {
             $this->deleteStoredLogo();
-            AppSetting::put(AppSetting::KEY_LOGO_PATH, null);
+            $this->forgetLogoSettings();
         }
 
         if ($request->hasFile('logo')) {
@@ -77,10 +77,20 @@ class SettingsController extends Controller
             // under its own folder, served back through a controller rather
             // than from the web root.
             $path = $request->file('logo')->store('branding', 'private');
+            $disk = Storage::disk('private');
 
-            if ($path === false) {
+            // Checked for an empty result as well as an outright false. A
+            // guard on false alone let a null or empty path through, and the
+            // settings were then written as though the upload had worked: the
+            // path saved as nothing while the type and version said a logo was
+            // there. Nothing appeared and nothing reported a failure.
+            //
+            // The file is confirmed on disk before anything is recorded, so a
+            // write that reports success it did not have cannot leave a
+            // setting pointing at a file that is not there.
+            if (!is_string($path) || $path === '' || !$disk->exists($path) || $disk->size($path) === 0) {
                 return redirect()->back()
-                    ->with('error', 'The logo could not be saved. Please try again.');
+                    ->with('error', 'The logo could not be saved. Check that storage/app/private is writable, then try again.');
             }
 
             // Only after the replacement is safely on disk, so a failed write
@@ -104,6 +114,21 @@ class SettingsController extends Controller
 
         return redirect()->back()
             ->with('success', 'Branding updated successfully.');
+    }
+
+    /**
+     * Clears every setting describing the logo, not just its path.
+     *
+     * Leaving the type and version behind made it look, to anything reading
+     * the table, as though a logo were still set while the path said
+     * otherwise - which is exactly the state that is hard to tell apart from
+     * an upload that silently failed.
+     */
+    private function forgetLogoSettings(): void
+    {
+        AppSetting::put(AppSetting::KEY_LOGO_PATH, null);
+        AppSetting::put(AppSetting::KEY_LOGO_MIME, null);
+        AppSetting::put(AppSetting::KEY_LOGO_VERSION, null);
     }
 
     /**

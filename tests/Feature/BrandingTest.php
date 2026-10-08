@@ -166,6 +166,44 @@ class BrandingTest extends TestCase
         $this->assertNull(AppSetting::logoUrl());
     }
 
+    public function test_removing_the_logo_leaves_nothing_describing_it_behind(): void
+    {
+        Storage::fake('private');
+        $admin = $this->admin();
+
+        $this->actingAs($admin)->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+        $this->actingAs($admin)->post(route('settings.update-branding'), ['remove_logo' => '1']);
+
+        // A type or version left behind without a path reads, to anything
+        // looking at the table, as a logo that is set but cannot be found.
+        $this->assertNull(AppSetting::get(AppSetting::KEY_LOGO_PATH));
+        $this->assertNull(AppSetting::get(AppSetting::KEY_LOGO_VERSION));
+        $this->assertNull(AppSetting::get(AppSetting::KEY_LOGO_MIME));
+    }
+
+    public function test_an_upload_records_a_path_whenever_it_records_a_type(): void
+    {
+        Storage::fake('private');
+
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        // These three are written together or not at all. A type and version
+        // with no path is the state that looks like a logo is set while there
+        // is nothing to serve, and it reports no error of its own.
+        $path = AppSetting::get(AppSetting::KEY_LOGO_PATH);
+        $version = AppSetting::get(AppSetting::KEY_LOGO_VERSION);
+        $mime = AppSetting::get(AppSetting::KEY_LOGO_MIME);
+
+        $this->assertNotNull($path);
+        $this->assertNotNull($version);
+        $this->assertNotNull($mime);
+        Storage::disk('private')->assertExists($path);
+    }
+
     public function test_a_non_image_file_is_rejected(): void
     {
         Storage::fake('private');

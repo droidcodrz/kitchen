@@ -241,6 +241,26 @@ class BrandingDoctor extends Command
         $path = DB::table('app_settings')->where('key', AppSetting::KEY_LOGO_PATH)->value('value');
 
         if ($path === null || $path === '') {
+            // The version and type are only ever written next to a path. One
+            // without the other means an upload got far enough to record that
+            // it had happened but never recorded where the file went.
+            $orphans = DB::table('app_settings')
+                ->whereIn('key', [AppSetting::KEY_LOGO_VERSION, AppSetting::KEY_LOGO_MIME])
+                ->whereNotNull('value')
+                ->where('value', '!=', '')
+                ->count();
+
+            if ($orphans > 0) {
+                $this->row('logo', 'no path, but type/version are set', false);
+                $this->problem(
+                    'An upload recorded a logo without recording where the file went, so there is nothing to serve. The upload failed part way through - most often because storage/app/private could not be written to.',
+                    'Check that storage/ is writable, then upload the logo again from Settings. The save now reports an error instead of half-finishing.'
+                );
+                $this->newLine();
+
+                return;
+            }
+
             $this->row('logo', 'none uploaded - the built-in icon is used');
             $this->newLine();
 
