@@ -46,6 +46,70 @@
             </div>
         </div>
 
+        {{-- Branding. The name and logo belong to the whole installation, not
+             to one user, so only an administrator can change them. --}}
+        @if(Auth::user() && Auth::user()->role && Auth::user()->role->slug === 'admin')
+            <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Branding</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">The name and logo shown on the login page, in the sidebar and in the browser tab.</p>
+
+                <form method="POST" action="{{ route('settings.update-branding') }}" enctype="multipart/form-data" x-data="{ picked: null }">
+                    @csrf
+
+                    <div class="space-y-5">
+                        <div>
+                            <x-input-label for="app_name" :value="__('Application Name')" />
+                            <x-text-input id="app_name" name="app_name" type="text" class="mt-1 block w-full"
+                                          :value="old('app_name', $brandName)" maxlength="60" placeholder="{{ \App\Models\AppSetting::DEFAULT_APP_NAME }}" />
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Leave blank to go back to &ldquo;{{ \App\Models\AppSetting::DEFAULT_APP_NAME }}&rdquo;.</p>
+                            <x-input-error :messages="$errors->get('app_name')" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-input-label for="logo" :value="__('Logo')" />
+
+                            <div class="mt-2 flex items-center gap-4">
+                                <div class="flex-shrink-0 p-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    {{-- The chosen file is previewed before it is
+                                         uploaded, so a wrong pick is obvious
+                                         without having to save first. --}}
+                                    <template x-if="picked">
+                                        <img :src="picked" alt="Selected logo" class="w-12 h-12 object-contain">
+                                    </template>
+                                    <template x-if="!picked">
+                                        <div>
+                                            <x-app-logo class="w-12 h-12 text-gray-700 dark:text-gray-300" />
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="min-w-0">
+                                    <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"
+                                           @change="const f = $event.target.files[0]; picked = f ? URL.createObjectURL(f) : null"
+                                           class="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/60" />
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or WEBP, up to 2 MB.</p>
+                                </div>
+                            </div>
+
+                            <x-input-error :messages="$errors->get('logo')" class="mt-2" />
+
+                            @if($brandLogoUrl)
+                                <label class="flex items-center mt-3">
+                                    <input type="hidden" name="remove_logo" value="0">
+                                    <input type="checkbox" name="remove_logo" value="1" class="rounded border-gray-300 dark:border-gray-600 text-indigo-600 shadow-sm focus:ring-indigo-500">
+                                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">Remove the current logo and go back to the default icon</span>
+                                </label>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end pt-5 mt-5 border-t border-gray-200 dark:border-gray-700">
+                        <x-primary-button>Save Branding</x-primary-button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
         {{-- Profile Link --}}
         <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg p-6">
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">Account</h3>

@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Models\AppSetting;
 use App\Models\InventoryItem;
 use App\Models\Product;
 use App\Models\Project;
@@ -38,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
         $this->registerGates();
         $this->shareUploadLimits();
+        $this->shareBranding();
     }
 
     /**
@@ -79,6 +81,29 @@ class AppServiceProvider extends ServiceProvider
         View::share('postMaxBytes', $postMax);
         View::share('uploadMaxLabel', $label($uploadMax));
         View::share('postMaxLabel', $label($postMax));
+    }
+
+    /**
+     * Makes the application name and logo available to the layouts.
+     *
+     * A composer rather than View::share: this reads the database, and sharing
+     * would run that query on every request, including console commands and
+     * routes that render nothing. Bound to the views that actually display the
+     * branding, so it is fetched only when it is going to be used.
+     */
+    protected function shareBranding(): void
+    {
+        View::composer([
+            'layouts.app',
+            'layouts.guest',
+            'layouts.sidebar',
+            'settings.index',
+        ], function ($view) {
+            $view->with([
+                'brandName' => AppSetting::appName(),
+                'brandLogoUrl' => AppSetting::logoUrl(),
+            ]);
+        });
     }
 
     /**

@@ -40,6 +40,12 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// Outside auth on purpose. The login screen shows the logo, and a sign-in page
+// cannot fetch an image that requires being signed in. The handler serves only
+// the one stored path, never a path taken from the request.
+Route::get('branding/logo', [SettingsController::class, 'logo'])
+    ->name('branding.logo');
+
 /*
 |--------------------------------------------------------------------------
 | Authenticated Routes
@@ -148,6 +154,10 @@ Route::middleware(['auth', 'verified', 'no-cache'])->group(function () {
         ->name('settings.index');
     Route::patch('settings/theme', [SettingsController::class, 'updateTheme'])
         ->name('settings.update-theme');
+    // Authorised in UpdateBrandingRequest: administrators only, since the name
+    // and logo are the whole installation's rather than one user's.
+    Route::post('settings/branding', [SettingsController::class, 'updateBranding'])
+        ->name('settings.update-branding');
 
     // Trash / Waste Bin
     Route::get('trash', [TrashController::class, 'index'])
