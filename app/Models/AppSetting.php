@@ -138,10 +138,12 @@ class AppSetting extends Model
      * is stored as a setting of its own rather than read from the row's
      * timestamp, so this stays inside the one cached lookup.
      *
-     * Relative rather than absolute. The logo is served from this same
-     * application, so the host belongs to whatever the browser already asked
-     * for; an absolute URL would be built from APP_URL whenever it is
-     * generated outside a request, and point at the wrong host or port.
+     * Absolute, which during a request means built from the address the
+     * browser actually asked for. That matters where the application is not
+     * served from the root of the domain: a relative path is produced by
+     * stripping that root, so it comes out without the directory the
+     * application sits in and points at an address that does not exist. It was
+     * relative for a while and did exactly that.
      */
     public static function logoUrl(): ?string
     {
@@ -149,7 +151,7 @@ class AppSetting extends Model
             return null;
         }
 
-        return route('branding.logo', ['v' => static::get(static::KEY_LOGO_VERSION, '1')], false);
+        return route('branding.logo', ['v' => static::get(static::KEY_LOGO_VERSION, '1')]);
     }
 
     /**

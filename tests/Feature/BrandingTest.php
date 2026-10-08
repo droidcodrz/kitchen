@@ -299,6 +299,32 @@ class BrandingTest extends TestCase
             ->assertRedirect(route('settings.index'));
     }
 
+    public function test_the_logo_url_carries_the_directory_the_app_is_served_from(): void
+    {
+        Storage::fake('private');
+
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        // Where the application is not at the root of the domain - reached as
+        // /public/login rather than /login, which is how it is commonly set up
+        // on a local machine - the logo URL has to keep that directory. A
+        // relative path is produced by stripping it, so it comes out pointing
+        // at an address that does not exist and the image never loads.
+        $request = \Illuminate\Http\Request::create('http://localhost:8081/public/login', 'GET', [], [], [], [
+            'SCRIPT_FILENAME' => '/app/public/index.php',
+            'SCRIPT_NAME' => '/public/index.php',
+            'PHP_SELF' => '/public/index.php',
+        ]);
+        app()->instance('request', $request);
+        app('url')->setRequest($request);
+
+        $url = AppSetting::logoUrl();
+
+        $this->assertStringStartsWith('http://localhost:8081/public/branding/logo', $url);
+    }
+
     public function test_the_logo_is_not_served_through_a_stream(): void
     {
         // Not a style preference. A streamed response goes out through
