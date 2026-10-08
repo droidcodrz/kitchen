@@ -7,12 +7,26 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class BrandingTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * The settings are cached per request and in the cache store, and both
+     * outlive a single test in the same process. Without this, settings left
+     * by one test answer the next one's lookups.
+     */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        AppSetting::flushCache();
+    }
 
     private function admin(): User
     {
@@ -202,5 +216,48 @@ class BrandingTest extends TestCase
         AppSetting::put(AppSetting::KEY_LOGO_VERSION, 'changed');
 
         $this->assertNotSame($firstUrl, AppSetting::logoUrl());
+    }
+
+    public function test_a_missing_table_is_survived_without_being_cached(): void
+    {
+        // What happens on a server where the migration has not run yet: the
+        // page must still render on the default name rather than failing on
+        // the missing table.
+        Schema::drop('app_settings');
+
+        $this->assertSame(AppSetting::DEFAULT_APP_NAME, AppSetting::appName());
+        $this->get(route('login'))->assertOk();
+
+        // And the fallback must not have been cached. Caching it would leave
+        // every page on the default name for the full hour after the migration
+        // finally ran, which looks exactly like the setting being broken.
+        Schema::create('app_settings', function ($table) {
+            $table->id();
+            $table->string('key')->unique();
+            $table->text('value')->nullable();
+            $table->timestamps();
+        });
+
+        // Inserted straight through the query builder on purpose. Going via
+        // AppSetting::put would fire the model's saved event and clear the
+        // cache itself, which is exactly the thing under test here - the row
+        // has to appear without anything inviting the cache to refresh.
+        DB::table('app_settings')->insert([
+            'key' => AppSetting::KEY_APP_NAME,
+            'value' => 'Acme Kitchens',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->assertSame('Acme Kitchens', AppSetting::appName());
+    }
+
+    public function test_a_get_on_the_branding_url_lands_on_settings(): void
+    {
+        // A refresh or a back button after a save requests this with GET, which
+        // answered with an exception page before.
+        $this->actingAs($this->admin())
+            ->get('/settings/branding')
+            ->assertRedirect(route('settings.index'));
     }
 }

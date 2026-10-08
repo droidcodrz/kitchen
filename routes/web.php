@@ -158,6 +158,11 @@ Route::middleware(['auth', 'verified', 'no-cache'])->group(function () {
     // and logo are the whole installation's rather than one user's.
     Route::post('settings/branding', [SettingsController::class, 'updateBranding'])
         ->name('settings.update-branding');
+    // The form posts here, so nothing in the application ever requests this
+    // address with GET - but a refresh or a back button after a failed save
+    // does, and that answered with an exception page. Send it to the settings
+    // page instead, which is where the form lives.
+    Route::get('settings/branding', fn () => redirect()->route('settings.index'));
 
     // Trash / Waste Bin
     Route::get('trash', [TrashController::class, 'index'])

@@ -22,11 +22,19 @@ class AppSetting extends Model
 
     protected static function booted(): void
     {
-        static::saved(fn () => static::forgetCached());
-        static::deleted(fn () => static::forgetCached());
+        static::saved(fn () => static::flushCache());
+        static::deleted(fn () => static::flushCache());
     }
 
-    private static function forgetCached(): void
+    /**
+     * Drops both layers of caching - the per-request copy and the stored one.
+     *
+     * Public because the settings can change without a model event to notice
+     * it: a row written straight through the query builder, a seeder, or a
+     * database restored underneath a running application. Also what keeps one
+     * test's settings from leaking into the next.
+     */
+    public static function flushCache(): void
     {
         static::$cached = null;
         Cache::forget('app_settings:all');
@@ -44,16 +52,33 @@ class AppSetting extends Model
      */
     public static function all_settings(): array
     {
-        return static::$cached ??= Cache::remember('app_settings:all', 3600, function () {
-            // The table is created by a migration; a request served before that
-            // migration runs must still render rather than fail on a missing
-            // table, so fall back to an empty set.
-            try {
-                return static::query()->pluck('value', 'key')->all();
-            } catch (\Throwable $e) {
-                return [];
-            }
-        });
+        if (static::$cached !== null) {
+            return static::$cached;
+        }
+
+        $cached = Cache::get('app_settings:all');
+
+        if (is_array($cached)) {
+            return static::$cached = $cached;
+        }
+
+        try {
+            $values = static::query()->pluck('value', 'key')->all();
+        } catch (\Throwable $e) {
+            // The table is created by a migration, and a request served before
+            // that migration runs must still render rather than fail on the
+            // missing table.
+            //
+            // Returned without being cached, deliberately. Caching the empty
+            // fallback would keep every page showing the default name for the
+            // full hour after the migration finally ran, which looks exactly
+            // like the setting not working.
+            return [];
+        }
+
+        Cache::put('app_settings:all', $values, 3600);
+
+        return static::$cached = $values;
     }
 
     public static function get(string $key, ?string $default = null): ?string
