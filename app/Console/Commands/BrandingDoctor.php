@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\AppSetting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -20,7 +21,9 @@ use Illuminate\Support\Facades\Storage;
  */
 class BrandingDoctor extends Command
 {
-    protected $signature = 'branding:doctor {--repair : Create the settings table if it is missing}';
+    protected $signature = 'branding:doctor
+        {--repair : Create the settings table if it is missing}
+        {--fetch= : Request the logo over HTTP from this base address, e.g. http://localhost:8081/public}';
 
     protected $description = 'Check why the application name or logo is not showing';
 
@@ -43,6 +46,7 @@ class BrandingDoctor extends Command
         $this->checkLogoFile();
         $this->checkRoutes();
         $this->checkCachedArtefacts();
+        $this->fetchOverHttp();
 
         $this->newLine();
 
@@ -313,6 +317,76 @@ class BrandingDoctor extends Command
                 );
             }
         }
+        $this->newLine();
+    }
+
+    /**
+     * Asks the running site for the logo the way a browser would.
+     *
+     * Every other check here looks at the server's own state, and all of it
+     * can be correct while the browser still gets nothing - the request never
+     * arriving, or arriving and coming back empty. This is the one check that
+     * tells those apart, because it goes over HTTP rather than reading the
+     * disk.
+     */
+    private function fetchOverHttp(): void
+    {
+        $base = $this->option('fetch');
+
+        if ($base === null) {
+            return;
+        }
+
+        $this->line(' <options=bold>Fetch over HTTP</>');
+
+        $url = rtrim((string) $base, '/') . '/branding/logo';
+        $this->row('requesting', $url);
+
+        try {
+            $response = Http::timeout(10)->withoutVerifying()->get($url);
+        } catch (\Throwable $e) {
+            $this->row('result', 'could not connect', false);
+            $this->problem(
+                'Nothing answered at ' . $url . ' (' . $e->getMessage() . ').',
+                'Check the address is the one the site actually runs on, including any directory such as /public.'
+            );
+            $this->newLine();
+
+            return;
+        }
+
+        $status = $response->status();
+        $type = $response->header('Content-Type');
+        $bytes = strlen($response->body());
+
+        $this->row('status', (string) $status, $status === 200);
+        $this->row('content type', $type === '' ? '(none)' : $type, str_starts_with($type, 'image/'));
+        $this->row('bytes received', number_format($bytes), $bytes > 0);
+
+        if ($status === 404) {
+            $this->problem(
+                'The site answered 404. The address the page asks for is not the address the logo is served at - usually a directory such as /public missing from one of them.',
+                'Set APP_URL in .env to the address you open in the browser, including any directory, then run php artisan optimize:clear.'
+            );
+        } elseif ($status !== 200) {
+            $this->problem(
+                'The site answered ' . $status . ' instead of 200.',
+                'Check storage/logs/laravel.log for the error behind it.'
+            );
+        } elseif ($bytes === 0) {
+            $this->problem(
+                'The site answered 200 but sent no bytes. The response is being emptied on the way out - the usual cause is a disabled function in php.ini.',
+                'Check php.ini for readfile or fpassthru listed under disable_functions.'
+            );
+        } elseif (!str_starts_with((string) $type, 'image/')) {
+            $this->problem(
+                'The site answered with ' . $type . ' instead of an image type, and the application sends nosniff, so the browser will refuse to draw it.',
+                'Send the output of this command.'
+            );
+        } else {
+            $this->row('verdict', 'the logo is being served correctly over HTTP');
+        }
+
         $this->newLine();
     }
 
