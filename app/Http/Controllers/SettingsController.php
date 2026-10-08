@@ -7,10 +7,9 @@ use App\Models\AppSetting;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
-use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class SettingsController extends Controller
 {
@@ -153,7 +152,7 @@ class SettingsController extends Controller
      * sign-in page cannot fetch an image that requires being signed in. Only
      * ever streams the one stored path, never a path from the request.
      */
-    public function logo(): Response|StreamedResponse
+    public function logo(): BinaryFileResponse
     {
         $path = AppSetting::get(AppSetting::KEY_LOGO_PATH);
         $disk = Storage::disk(AppSetting::logoDisk());
@@ -162,7 +161,14 @@ class SettingsController extends Controller
             abort(404);
         }
 
-        return $disk->response($path, null, [
+        // Served with readfile() rather than streamed, matching the attachment
+        // download in this application. $disk->response() streams through
+        // fpassthru(), which some hosts disable in php.ini - and when it is
+        // disabled the response comes back empty with no error anywhere. The
+        // file is on disk, every setting is right, and the browser shows a
+        // broken image. That trap was already found once here, on attachment
+        // downloads; this is the same trap.
+        return response()->file($disk->path($path), [
             // Set explicitly rather than left to detection - see
             // AppSetting::logoMimeType for why that matters here.
             'Content-Type' => AppSetting::logoMimeType(),

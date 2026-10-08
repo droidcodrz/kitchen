@@ -299,6 +299,27 @@ class BrandingTest extends TestCase
             ->assertRedirect(route('settings.index'));
     }
 
+    public function test_the_logo_is_not_served_through_a_stream(): void
+    {
+        // Not a style preference. A streamed response goes out through
+        // fpassthru(), which some hosts disable in php.ini, and when it is
+        // disabled the response arrives empty with no error raised anywhere -
+        // the file on disk, the settings and the route all check out while the
+        // browser shows a broken image. The attachment download in this
+        // application already had to avoid exactly this.
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        $response = $this->get(route('branding.logo'));
+
+        $response->assertOk();
+        $this->assertInstanceOf(
+            \Symfony\Component\HttpFoundation\BinaryFileResponse::class,
+            $response->baseResponse
+        );
+    }
+
     public function test_the_logo_is_served_with_an_image_content_type(): void
     {
         Storage::fake('private');
