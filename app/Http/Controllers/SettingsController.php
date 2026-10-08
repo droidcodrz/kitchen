@@ -92,6 +92,14 @@ class SettingsController extends Controller
             // Changes the logo's URL so browsers holding the previous one do
             // not keep showing it.
             AppSetting::put(AppSetting::KEY_LOGO_VERSION, (string) now()->timestamp);
+            // Recorded now so serving it never depends on detecting the type,
+            // which needs the fileinfo extension. Checked against the allowed
+            // list because this value comes from the browser.
+            $mime = $request->file('logo')->getClientMimeType();
+            AppSetting::put(
+                AppSetting::KEY_LOGO_MIME,
+                in_array($mime, AppSetting::ALLOWED_LOGO_MIMES, true) ? $mime : null
+            );
         }
 
         return redirect()->back()
@@ -130,6 +138,9 @@ class SettingsController extends Controller
         }
 
         return $disk->response($path, null, [
+            // Set explicitly rather than left to detection - see
+            // AppSetting::logoMimeType for why that matters here.
+            'Content-Type' => AppSetting::logoMimeType(),
             'Cache-Control' => 'public, max-age=86400',
         ]);
     }

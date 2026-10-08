@@ -260,4 +260,55 @@ class BrandingTest extends TestCase
             ->get('/settings/branding')
             ->assertRedirect(route('settings.index'));
     }
+
+    public function test_the_logo_is_served_with_an_image_content_type(): void
+    {
+        Storage::fake('private');
+
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        // The application sends X-Content-Type-Options: nosniff, so a wrong or
+        // missing type makes the browser refuse to render the image at all - it
+        // shows as a broken icon with nothing in the logs to say why.
+        $this->get(route('branding.logo'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png');
+    }
+
+    public function test_the_content_type_does_not_depend_on_a_stored_value(): void
+    {
+        Storage::fake('private');
+
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        // A logo saved before the type was being recorded, and anything that
+        // loses the value later, still has to serve as an image.
+        AppSetting::put(AppSetting::KEY_LOGO_MIME, null);
+
+        $this->get(route('branding.logo'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png');
+    }
+
+    public function test_a_spoofed_content_type_is_not_served_back(): void
+    {
+        Storage::fake('private');
+
+        $this->actingAs($this->admin())->post(route('settings.update-branding'), [
+            'logo' => UploadedFile::fake()->image('brand.png', 300, 300),
+        ]);
+
+        // The recorded type comes from the browser, so a crafted request could
+        // put anything there. It must never come back out as something a
+        // browser would treat as a document.
+        AppSetting::put(AppSetting::KEY_LOGO_MIME, 'text/html');
+
+        $this->get(route('branding.logo'))
+            ->assertOk()
+            ->assertHeader('Content-Type', 'image/png');
+    }
 }

@@ -11,6 +11,14 @@ class AppSetting extends Model
     public const KEY_LOGO_PATH = 'logo_path';
     public const KEY_LOGO_DISK = 'logo_disk';
     public const KEY_LOGO_VERSION = 'logo_version';
+    public const KEY_LOGO_MIME = 'logo_mime';
+
+    /**
+     * The only types a logo may be served as. The value is recorded from the
+     * upload, so it is checked against this rather than trusted: a browser
+     * sends that header and a crafted request can say anything.
+     */
+    public const ALLOWED_LOGO_MIMES = ['image/png', 'image/jpeg', 'image/webp'];
 
     /**
      * Shown wherever no name has been set. Also what the name reverts to when
@@ -142,5 +150,34 @@ class AppSetting extends Model
         }
 
         return route('branding.logo', ['v' => static::get(static::KEY_LOGO_VERSION, '1')], false);
+    }
+
+    /**
+     * The type the logo is served as.
+     *
+     * Recorded at upload rather than detected when it is served. Detection
+     * needs the fileinfo extension, and where that is missing the type comes
+     * out wrong or empty - which, with the nosniff header this application
+     * sends, makes the browser refuse to render the image at all. It shows as
+     * a broken icon, with nothing in the logs to say why.
+     *
+     * Falls back to the file extension for a logo uploaded before the type
+     * was being stored, and to PNG if even that is gone.
+     */
+    public static function logoMimeType(): string
+    {
+        $stored = static::get(static::KEY_LOGO_MIME);
+
+        if ($stored !== null && in_array($stored, static::ALLOWED_LOGO_MIMES, true)) {
+            return $stored;
+        }
+
+        $extension = strtolower(pathinfo((string) static::get(static::KEY_LOGO_PATH), PATHINFO_EXTENSION));
+
+        return match ($extension) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'webp' => 'image/webp',
+            default => 'image/png',
+        };
     }
 }
