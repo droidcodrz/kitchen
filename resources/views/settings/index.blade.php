@@ -53,7 +53,29 @@
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">Branding</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">The name and logo shown on the login page, in the sidebar and in the browser tab.</p>
 
-                <form method="POST" action="{{ route('settings.update-branding') }}" enctype="multipart/form-data" x-data="{ picked: null }">
+                <form method="POST" action="{{ route('settings.update-branding') }}" enctype="multipart/form-data"
+                      x-data="{
+                          picked: null,
+                          preview(event) {
+                              const file = event.target.files[0];
+
+                              if (!file) {
+                                  this.picked = null;
+                                  return;
+                              }
+
+                              // Read into a data: URL rather than taking an
+                              // object URL. createObjectURL hands back a blob:
+                              // address, and this application's img-src allows
+                              // 'self' and data: only - so the preview was
+                              // blocked before it could draw, and showed as a
+                              // broken image. data: is already allowed, so this
+                              // needs no loosening of the policy.
+                              const reader = new FileReader();
+                              reader.onload = e => this.picked = e.target.result;
+                              reader.readAsDataURL(file);
+                          },
+                      }">
                     @csrf
 
                     <div class="space-y-5">
@@ -85,7 +107,7 @@
 
                                 <div class="min-w-0">
                                     <input id="logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"
-                                           @change="const f = $event.target.files[0]; picked = f ? URL.createObjectURL(f) : null"
+                                           @change="preview($event)"
                                            class="block w-full text-sm text-gray-600 dark:text-gray-400 file:mr-3 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-indigo-900/40 file:text-indigo-700 dark:file:text-indigo-300 hover:file:bg-indigo-100 dark:hover:file:bg-indigo-900/60" />
                                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">PNG, JPG or WEBP, up to 2 MB.</p>
                                 </div>
